@@ -36,7 +36,7 @@ npm run dev
 |---|--------------------------------------|--------|
 | 0 | Scaffold                             | ✅     |
 | 1 | Supabase schema + Auth               | ✅     |
-| 2 | Landing + dashboard shell            | ⏳     |
+| 2 | Landing + dashboard shell            | ✅     |
 | 3 | Upstox proxy + live charts           | ⏳     |
 | 4 | Portfolio tracker                    | ⏳     |
 | 5 | Fundamentals screener                | ⏳     |

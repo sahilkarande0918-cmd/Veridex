@@ -1,4 +1,28 @@
 import { Link } from 'react-router-dom'
+import { motion, type Variants } from 'framer-motion'
+
+const fadeUp: Variants = {
+  hidden: { opacity: 0, y: 24 },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
+}
+
+const features: { title: string; body: string }[] = [
+  { title: 'Every score shows its work',
+    body:  'Backtested accuracy, sample size, and methodology sit next to the number. If we can\'t defend it, we don\'t show it.' },
+  { title: 'AI grounded in real data',
+    body:  'The chat never invents a price. It only summarizes numbers the backend just computed or freshly fetched.' },
+  { title: 'No orders, no fee grabs',
+    body:  'Analysis and tracking only. You place trades yourself on the broker you already use.' },
+  { title: 'Walk-forward, not wishful',
+    body:  'Time-series models trained on the past, tested on strictly-future windows. No look-ahead bias.' },
+]
+
+const groundRules: string[] = [
+  'Never places buy or sell orders on your behalf.',
+  'Every prediction or signal shows its methodology and accuracy inline.',
+  'AI chat cannot originate market numbers — it summarizes computed data.',
+  'Persistent disclaimer: not SEBI-registered investment advice.',
+]
 
 export default function Landing() {
   return (
@@ -15,16 +39,19 @@ export default function Landing() {
         </Link>
       </nav>
 
-      <section className="max-w-3xl mx-auto text-center px-6 pt-20 pb-16 space-y-6">
+      <motion.section
+        initial="hidden" animate="show" variants={fadeUp}
+        className="max-w-3xl mx-auto text-center px-6 pt-20 pb-24 space-y-6"
+      >
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-neutral-800 text-xs text-neutral-400">
           <span className="size-1.5 rounded-full bg-violet-500 animate-pulse" />
-          Phase 1 — auth online
+          For Indian retail investors
         </div>
         <h1 className="text-6xl font-semibold tracking-tight leading-none">
           Stock analysis you<br />can actually verify.
         </h1>
         <p className="text-neutral-400 text-lg max-w-xl mx-auto">
-          Live Indian-market data, transparent backtested signal accuracy,
+          Live Upstox market data, transparent backtested signal accuracy,
           and AI explanations grounded in real computed numbers.
           Never a bare "buy this" tip.
         </p>
@@ -36,7 +63,37 @@ export default function Landing() {
             Get started — free
           </Link>
         </div>
+      </motion.section>
+
+      <section className="max-w-5xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-2 gap-5">
+        {features.map((f, i) => (
+          <motion.div
+            key={f.title}
+            initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }}
+            variants={fadeUp} transition={{ delay: i * 0.08 }}
+            className="rounded-xl border border-neutral-900 bg-neutral-950 p-6 space-y-2"
+          >
+            <div className="text-sm font-medium">{f.title}</div>
+            <p className="text-sm text-neutral-500 leading-relaxed">{f.body}</p>
+          </motion.div>
+        ))}
       </section>
+
+      <motion.section
+        initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }}
+        variants={fadeUp}
+        className="max-w-3xl mx-auto px-6 py-16 space-y-4"
+      >
+        <h2 className="text-2xl font-semibold">Ground rules</h2>
+        <ul className="space-y-2 text-sm text-neutral-400">
+          {groundRules.map((r) => (
+            <li key={r} className="flex gap-3">
+              <span className="text-violet-500 mt-1.5 size-1.5 rounded-full bg-violet-500 shrink-0" />
+              <span>{r}</span>
+            </li>
+          ))}
+        </ul>
+      </motion.section>
 
       <footer className="max-w-3xl mx-auto text-center px-6 py-16 border-t border-neutral-900">
         <p className="text-xs text-neutral-600">
