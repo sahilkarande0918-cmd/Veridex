@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { AuthProvider } from '@/lib/auth'
+import { ThemeProvider } from '@/lib/theme'
 import Landing from '@/routes/Landing'
 import Login from '@/routes/Login'
 import Protected from '@/routes/Protected'
@@ -19,6 +20,7 @@ const Chat      = lazy(() => import('@/routes/dashboard/Chat'))
 
 export default function App() {
   return (
+    <ThemeProvider>
     <AuthProvider>
       <BrowserRouter>
         <Suspense fallback={<Fallback />}>
@@ -43,6 +45,7 @@ export default function App() {
         </Suspense>
       </BrowserRouter>
     </AuthProvider>
+    </ThemeProvider>
   )
 }
 

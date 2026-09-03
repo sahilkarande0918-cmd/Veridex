@@ -4,6 +4,7 @@ import MarketStatus from './MarketStatus'
 import Disclaimer from './Disclaimer'
 import AlertsBell from './AlertsBell'
 import TickerTape from './TickerTape'
+import ThemeToggle from './ThemeToggle'
 
 type NavItem = { to: string; label: string; icon: string }
 
@@ -66,6 +67,7 @@ export default function DashboardShell() {
           <div className="text-sm text-neutral-400">Dashboard</div>
           <div className="flex items-center gap-4">
             <MarketStatus />
+            <ThemeToggle />
             <AlertsBell />
           </div>
         </header>

@@ -1,18 +1,141 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #0a0a0a;
-  --color-panel: #111113;
-  --color-border: #26262a;
-  --color-accent: #7c3aed;
-  --color-pos: #22c55e;
-  --color-neg: #ef4444;
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
 
 html, body, #root { height: 100%; }
-body { font-family: var(--font-sans); }
-
-/* tabular numerals for price data */
+body {
+  font-family: var(--font-sans);
+  background-color: #0a0a0d;
+  color: #fafafa;
+  color-scheme: dark;
+}
 .tabular { font-variant-numeric: tabular-nums; }
+
+/* --- richer dark: warm-tinted background + very subtle radial glow --- */
+:root[data-theme="dark"] body,
+:root:not([data-theme]) body {
+  background-color: #0a0a0d;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124, 58, 237, 0.06), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(6, 182, 212, 0.04), transparent 60%);
+  background-attachment: fixed;
+  color-scheme: dark;
+}
+
+/* =====================================================================
+   Light theme — INDmoney-inspired: white cards, off-white bg,
+   cyan/teal accent replaces violet, clean shadow-based depth.
+   Aggressive CSS overrides so component code stays theme-agnostic.
+   ===================================================================== */
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+:root[data-theme="light"] body {
+  background-color: #f5f7fa;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(6, 182, 212, 0.07), transparent 70%);
+  background-attachment: fixed;
+  color: #0f172a;
+}
+
+/* backgrounds */
+:root[data-theme="light"] .bg-neutral-950   { background-color: #ffffff !important; }
+:root[data-theme="light"] .bg-neutral-900   { background-color: #f1f5f9 !important; }
+:root[data-theme="light"] .bg-neutral-900\/50   { background-color: rgba(241,245,249,0.6) !important; }
+:root[data-theme="light"] .bg-neutral-900\/40   { background-color: rgba(241,245,249,0.4) !important; }
+:root[data-theme="light"] .bg-neutral-900\/60   { background-color: rgba(241,245,249,0.7) !important; }
+:root[data-theme="light"] .bg-neutral-800\/40   { background-color: rgba(226,232,240,0.5) !important; }
+:root[data-theme="light"] .bg-neutral-800\/60   { background-color: rgba(226,232,240,0.6) !important; }
+:root[data-theme="light"] .bg-neutral-950\/60   { background-color: rgba(255,255,255,0.85) !important; }
+:root[data-theme="light"] .bg-neutral-950\/40   { background-color: rgba(255,255,255,0.7) !important; }
+
+/* text */
+:root[data-theme="light"] .text-neutral-100 { color: #0f172a !important; }
+:root[data-theme="light"] .text-neutral-200 { color: #1e293b !important; }
+:root[data-theme="light"] .text-neutral-300 { color: #334155 !important; }
+:root[data-theme="light"] .text-neutral-400 { color: #64748b !important; }
+:root[data-theme="light"] .text-neutral-500 { color: #94a3b8 !important; }
+:root[data-theme="light"] .text-neutral-600 { color: #cbd5e1 !important; }
+:root[data-theme="light"] .text-white       { color: #ffffff !important; } /* button labels */
+
+/* borders */
+:root[data-theme="light"] .border-neutral-800   { border-color: #e2e8f0 !important; }
+:root[data-theme="light"] .border-neutral-900   { border-color: #eef2f7 !important; }
+:root[data-theme="light"] .border-dashed        { border-style: dashed; }
+:root[data-theme="light"] .divide-neutral-900 > * + * { border-color: #eef2f7 !important; }
+
+/* Card shadow for INDmoney feel — subtle on rest, deeper on hover */
+:root[data-theme="light"] .rounded-xl,
+:root[data-theme="light"] .rounded-2xl,
+:root[data-theme="light"] .rounded-lg {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+:root[data-theme="light"] a.rounded-xl:hover,
+:root[data-theme="light"] a.rounded-2xl:hover {
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+/* violet accent → cyan/teal accent (INDmoney signature) */
+:root[data-theme="light"] .bg-violet-500,
+:root[data-theme="light"] .bg-violet-600      { background-color: #0891b2 !important; }
+:root[data-theme="light"] .hover\:bg-violet-500:hover,
+:root[data-theme="light"] .hover\:bg-violet-500\/60:hover { background-color: #06b6d4 !important; }
+:root[data-theme="light"] .text-violet-300    { color: #0e7490 !important; }
+:root[data-theme="light"] .text-violet-400    { color: #0891b2 !important; }
+:root[data-theme="light"] .bg-violet-600\/10  { background-color: rgba(6,182,212,0.10) !important; }
+:root[data-theme="light"] .bg-violet-600\/\[0\.03\] { background-color: rgba(6,182,212,0.05) !important; }
+:root[data-theme="light"] .bg-violet-600\/\[0\.05\] { background-color: rgba(6,182,212,0.06) !important; }
+:root[data-theme="light"] .border-violet-500\/20 { border-color: rgba(6,182,212,0.25) !important; }
+:root[data-theme="light"] .border-violet-500\/40 { border-color: rgba(6,182,212,0.55) !important; }
+:root[data-theme="light"] .hover\:border-violet-500\/40:hover { border-color: rgba(6,182,212,0.55) !important; }
+:root[data-theme="light"] .focus\:border-violet-600:focus     { border-color: #06b6d4 !important; }
+:root[data-theme="light"] .hover\:border-violet-600:hover     { border-color: #06b6d4 !important; }
+:root[data-theme="light"] .hover\:text-violet-300:hover       { color: #06b6d4 !important; }
+:root[data-theme="light"] .from-violet-600\/\[0\.03\]         { --tw-gradient-from: rgba(6,182,212,0.05) !important; }
+:root[data-theme="light"] .from-violet-600\/\[0\.05\]         { --tw-gradient-from: rgba(6,182,212,0.06) !important; }
+
+/* semantic tones (up/down) stay green/red but slightly deeper for light */
+:root[data-theme="light"] .text-emerald-400   { color: #059669 !important; }
+:root[data-theme="light"] .text-emerald-300   { color: #10b981 !important; }
+:root[data-theme="light"] .text-red-400       { color: #dc2626 !important; }
+:root[data-theme="light"] .text-red-300       { color: #ef4444 !important; }
+:root[data-theme="light"] .bg-emerald-500\/10 { background-color: rgba(16,185,129,0.10) !important; }
+:root[data-theme="light"] .border-emerald-500\/20 { border-color: rgba(16,185,129,0.30) !important; }
+:root[data-theme="light"] .bg-red-500\/10     { background-color: rgba(239,68,68,0.10) !important; }
+:root[data-theme="light"] .border-red-500\/20 { border-color: rgba(239,68,68,0.30) !important; }
+:root[data-theme="light"] .bg-amber-500\/10   { background-color: rgba(245,158,11,0.10) !important; }
+:root[data-theme="light"] .bg-amber-500\/\[0\.03\] { background-color: rgba(245,158,11,0.05) !important; }
+:root[data-theme="light"] .text-amber-200\/80 { color: #b45309 !important; }
+:root[data-theme="light"] .text-amber-300     { color: #d97706 !important; }
+:root[data-theme="light"] .text-amber-400     { color: #d97706 !important; }
+:root[data-theme="light"] .border-amber-500\/20 { border-color: rgba(217,119,6,0.35) !important; }
+
+/* AI-generated chat bubble in light: cyan instead of violet */
+:root[data-theme="light"] .bg-violet-600.text-white { background-color: #0891b2 !important; }
+
+/* ticker-tape row: warmer edge on light */
+:root[data-theme="light"] .h-8.border-b { background-color: #ffffff !important; }
+
+/* backdrop-blur containers */
+:root[data-theme="light"] .backdrop-blur { background-color: rgba(255,255,255,0.7) !important; }
+
+/* Radial background on the shell — turn off in light mode; body gradient handles it */
+:root[data-theme="light"] .bg-\[radial-gradient\(circle_at_top\,_rgba\(124\,58\,237\,0\.04\)_0\%\,_transparent_50\%\)\] {
+  background-image: none !important;
+}
+
+/* Gradient hero card on Profile — swap violet to cyan */
+:root[data-theme="light"] .from-violet-600\/\[0\.05\] { --tw-gradient-from: rgba(6,182,212,0.08) !important; }
+:root[data-theme="light"] .via-neutral-950            { --tw-gradient-via: #ffffff !important; }
+:root[data-theme="light"] .to-neutral-950             { --tw-gradient-to: #ffffff !important; }
+:root[data-theme="light"] .to-neutral-950\/40         { --tw-gradient-to: rgba(255,255,255,0.7) !important; }
+:root[data-theme="light"] .from-neutral-950          { --tw-gradient-from: #ffffff !important; }
+
+/* Input caret color in light */
+:root[data-theme="light"] input,
+:root[data-theme="light"] textarea,
+:root[data-theme="light"] select { caret-color: #0891b2; color: #0f172a; }
+:root[data-theme="light"] input::placeholder { color: #94a3b8; }
