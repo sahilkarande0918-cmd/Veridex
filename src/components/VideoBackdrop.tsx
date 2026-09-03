@@ -37,6 +37,7 @@ export default function VideoBackdrop() {
       <video
         ref={ref}
         src="/login-bg.mp4"
+        poster="/login-bg-poster.jpg"
         autoPlay muted loop playsInline
         preload="auto"
         disablePictureInPicture
