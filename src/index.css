@@ -15,128 +15,159 @@ body {
 .tabular { font-variant-numeric: tabular-nums; }
 
 /* =====================================================================
-   DARK — richer background: layered radial glows + faint dotted grid.
+   DARK — strict pitch black. No gradients, no radial glows, no dots.
+   Only interactions come from framer-motion. Cards are flat panels.
    ===================================================================== */
 :root[data-theme="dark"] body,
 :root:not([data-theme]) body {
-  background-color: #08080b;
-  background-image:
-    radial-gradient(ellipse 60% 40% at 15% -5%,  rgba(124, 58, 237, 0.18), transparent 70%),
-    radial-gradient(ellipse 60% 40% at 85% 105%, rgba(6, 182, 212, 0.10), transparent 70%),
-    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.02) 1px, transparent 1px);
-  background-size: auto, auto, 22px 22px;
-  background-attachment: fixed;
+  background-color: #000000;
+  background-image: none;
   color-scheme: dark;
-  color: #f5f5f7;
+  color: #fafafa;
 }
+:root[data-theme="dark"] .bg-neutral-950,
+:root[data-theme="dark"] .bg-neutral-950\/60,
+:root[data-theme="dark"] .bg-neutral-950\/40  { background-color: #0a0a0a !important; }
+:root[data-theme="dark"] .bg-neutral-900,
+:root[data-theme="dark"] .bg-neutral-900\/60,
+:root[data-theme="dark"] .bg-neutral-900\/50,
+:root[data-theme="dark"] .bg-neutral-900\/40  { background-color: #111111 !important; }
+:root[data-theme="dark"] .bg-neutral-800\/60,
+:root[data-theme="dark"] .bg-neutral-800\/40  { background-color: #171717 !important; }
+:root[data-theme="dark"] .border-neutral-900  { border-color: #1a1a1a !important; }
+:root[data-theme="dark"] .border-neutral-800  { border-color: #262626 !important; }
 
-/* subtle top-highlight sheen on rounded panels in dark */
-:root[data-theme="dark"] .rounded-xl,
-:root[data-theme="dark"] .rounded-2xl {
-  background-image: linear-gradient(180deg, rgba(255,255,255,0.02), transparent 30%);
-}
-/* keep gradient-utility cards driving their own gradient */
+/* Flatten every gradient in dark */
 :root[data-theme="dark"] .bg-gradient-to-br,
 :root[data-theme="dark"] .bg-gradient-to-b,
-:root[data-theme="dark"] .bg-gradient-to-r { background-image: none; }
-:root[data-theme="dark"] .bg-gradient-to-br { background-image: linear-gradient(to bottom right, var(--tw-gradient-stops)); }
-:root[data-theme="dark"] .bg-gradient-to-b  { background-image: linear-gradient(to bottom,       var(--tw-gradient-stops)); }
-:root[data-theme="dark"] .bg-gradient-to-r  { background-image: linear-gradient(to right,        var(--tw-gradient-stops)); }
+:root[data-theme="dark"] .bg-gradient-to-r    { background-image: none !important; }
 
-/* stronger card border and hover glow in dark */
-:root[data-theme="dark"] .border-neutral-900 { border-color: #1a1a1f; }
+/* Kill decorative blur orbs / shell radial */
+:root[data-theme="dark"] .blur-3xl.bg-violet-500\/10 { display: none !important; }
+:root[data-theme="dark"] .bg-\[radial-gradient\(circle_at_top\,_rgba\(124\,58\,237\,0\.04\)_0\%\,_transparent_50\%\)\] {
+  background-image: none !important;
+}
+/* Hover accent — subtle border only, no glow */
 :root[data-theme="dark"] .hover\:border-violet-500\/40:hover {
-  border-color: rgba(139, 92, 246, 0.5) !important;
-  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.15), 0 8px 24px -12px rgba(139, 92, 246, 0.35);
+  border-color: #3a3a3a !important;
+  box-shadow: none !important;
 }
+/* Brand-dot: keep tiny pulse, drop the loud glow */
+:root[data-theme="dark"] .shadow-\[0_0_8px_rgba\(124\,58\,237\,0\.8\)\] { box-shadow: none !important; }
 
-/* brand-dot glow */
-:root[data-theme="dark"] .shadow-\[0_0_8px_rgba\(124\,58\,237\,0\.8\)\] {
-  box-shadow: 0 0 12px rgba(139, 92, 246, 0.85);
-}
+/* Custom scrollbars stay */
+:root[data-theme="dark"] ::-webkit-scrollbar { width: 10px; height: 10px; }
+:root[data-theme="dark"] ::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 8px; }
+:root[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #262626; }
 
 /* =====================================================================
-   LIGHT — INDmoney-inspired.
-   Warmer body, white cards, cyan accent, real contrast on muted text.
-   Overrides target base + hover: variants so no button flips to dark.
+   LIGHT — rich, attractive, INDmoney/Groww flavor.
+   Pastel radial blobs on the body, gradient CTAs, colored hero,
+   glass-y cards with a warm shadow.
    ===================================================================== */
 :root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="light"] body {
-  background-color: #eef2f7;
+  background-color: #eef2f8;
   background-image:
-    radial-gradient(ellipse 60% 40% at 15% -5%,  rgba(6, 182, 212, 0.12), transparent 70%),
-    radial-gradient(ellipse 60% 40% at 85% 105%, rgba(14, 116, 144, 0.08), transparent 70%);
+    radial-gradient(ellipse 600px 480px at  5% -10%, rgba(6, 182, 212, 0.28), transparent 65%),
+    radial-gradient(ellipse 500px 400px at 95%  15%, rgba(251, 146, 60, 0.18), transparent 65%),
+    radial-gradient(ellipse 700px 500px at 50% 110%, rgba(168, 85, 247, 0.14), transparent 65%);
   background-attachment: fixed;
   color: #0f172a;
 }
 
-/* backgrounds */
+/* backgrounds → clean white with a slight blue-white variant for chrome */
 :root[data-theme="light"] .bg-neutral-950,
 :root[data-theme="light"] .bg-neutral-950\/60,
-:root[data-theme="light"] .bg-neutral-950\/40 { background-color: #ffffff !important; }
+:root[data-theme="light"] .bg-neutral-950\/40 { background-color: rgba(255,255,255,0.85) !important; backdrop-filter: blur(8px); }
 :root[data-theme="light"] .bg-neutral-900,
 :root[data-theme="light"] .bg-neutral-900\/60,
 :root[data-theme="light"] .bg-neutral-900\/50,
-:root[data-theme="light"] .bg-neutral-900\/40 { background-color: #f1f5f9 !important; }
+:root[data-theme="light"] .bg-neutral-900\/40 { background-color: #f1f5fb !important; }
 :root[data-theme="light"] .bg-neutral-800\/60,
-:root[data-theme="light"] .bg-neutral-800\/40 { background-color: #e2e8f0 !important; }
+:root[data-theme="light"] .bg-neutral-800\/40 { background-color: #dfe7f2 !important; }
 
-/* hover backgrounds — CRITICAL fix (was flipping to dark) */
+/* CRITICAL: hover backgrounds that were flipping to Tailwind dark */
 :root[data-theme="light"] .hover\:bg-neutral-900:hover,
 :root[data-theme="light"] .hover\:bg-neutral-900\/40:hover,
 :root[data-theme="light"] .hover\:bg-neutral-900\/60:hover,
-:root[data-theme="light"] .hover\:bg-neutral-800\/60:hover { background-color: #e2e8f0 !important; }
+:root[data-theme="light"] .hover\:bg-neutral-800\/60:hover { background-color: #e4ecf6 !important; }
 
-/* text — darker across the board for readability on white */
+/* text — real contrast */
 :root[data-theme="light"] .text-neutral-100 { color: #0f172a !important; }
 :root[data-theme="light"] .text-neutral-200 { color: #1e293b !important; }
 :root[data-theme="light"] .text-neutral-300 { color: #334155 !important; }
-:root[data-theme="light"] .text-neutral-400 { color: #475569 !important; } /* was #64748b */
-:root[data-theme="light"] .text-neutral-500 { color: #64748b !important; } /* was #94a3b8 — main fix */
+:root[data-theme="light"] .text-neutral-400 { color: #475569 !important; }
+:root[data-theme="light"] .text-neutral-500 { color: #64748b !important; }
 :root[data-theme="light"] .text-neutral-600 { color: #94a3b8 !important; }
 :root[data-theme="light"] .hover\:text-neutral-100:hover { color: #0f172a !important; }
 :root[data-theme="light"] .hover\:text-neutral-300:hover { color: #334155 !important; }
 
 /* borders */
-:root[data-theme="light"] .border-neutral-800   { border-color: #d5deea !important; }
-:root[data-theme="light"] .border-neutral-900   { border-color: #e8edf3 !important; }
-:root[data-theme="light"] .divide-neutral-900 > * + * { border-color: #e8edf3 !important; }
+:root[data-theme="light"] .border-neutral-800  { border-color: rgba(15,23,42,0.08) !important; }
+:root[data-theme="light"] .border-neutral-900  { border-color: rgba(15,23,42,0.06) !important; }
+:root[data-theme="light"] .divide-neutral-900 > * + * { border-color: rgba(15,23,42,0.06) !important; }
 
-/* soft card shadow depth (INDmoney feel) */
+/* Card depth — layered soft shadow, deeper on hover */
 :root[data-theme="light"] .rounded-xl,
 :root[data-theme="light"] .rounded-2xl,
 :root[data-theme="light"] .rounded-lg {
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 1px rgba(15, 23, 42, 0.02);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 4px 16px -8px rgba(15, 23, 42, 0.08);
 }
 :root[data-theme="light"] a.rounded-xl:hover,
 :root[data-theme="light"] a.rounded-2xl:hover {
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.10);
+  box-shadow:
+    0 4px 8px rgba(15, 23, 42, 0.06),
+    0 12px 32px -8px rgba(6, 182, 212, 0.20);
 }
 
-/* violet → cyan (INDmoney signature) */
+/* Primary button — gradient cyan → teal (INDmoney-ish) */
 :root[data-theme="light"] .bg-violet-500,
-:root[data-theme="light"] .bg-violet-600 { background-color: #0891b2 !important; color: #fff; }
+:root[data-theme="light"] .bg-violet-600 {
+  background-color: #0891b2 !important;
+  background-image: linear-gradient(135deg, #06b6d4 0%, #0891b2 60%, #0e7490 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 12px -4px rgba(8, 145, 178, 0.4);
+}
 :root[data-theme="light"] .hover\:bg-violet-500:hover,
-:root[data-theme="light"] .hover\:bg-violet-500\/60:hover { background-color: #06b6d4 !important; }
+:root[data-theme="light"] .hover\:bg-violet-500\/60:hover {
+  background-image: linear-gradient(135deg, #22d3ee 0%, #06b6d4 60%, #0891b2 100%) !important;
+  box-shadow: 0 6px 16px -4px rgba(8, 145, 178, 0.5);
+}
 :root[data-theme="light"] .text-violet-300 { color: #0e7490 !important; }
 :root[data-theme="light"] .text-violet-400 { color: #0891b2 !important; }
-:root[data-theme="light"] .bg-violet-600\/10 { background-color: rgba(6,182,212,0.10) !important; }
+:root[data-theme="light"] .bg-violet-600\/10 { background-color: rgba(6,182,212,0.12) !important; }
 :root[data-theme="light"] .bg-violet-600\/\[0\.03\] { background-color: rgba(6,182,212,0.06) !important; }
 :root[data-theme="light"] .bg-violet-600\/\[0\.05\] { background-color: rgba(6,182,212,0.08) !important; }
-:root[data-theme="light"] .border-violet-500\/20 { border-color: rgba(6,182,212,0.35) !important; }
+:root[data-theme="light"] .border-violet-500\/20 { border-color: rgba(6,182,212,0.4) !important; }
 :root[data-theme="light"] .border-violet-500\/40 { border-color: rgba(6,182,212,0.6) !important; }
-:root[data-theme="light"] .hover\:border-violet-500\/40:hover { border-color: rgba(6,182,212,0.6) !important; box-shadow: 0 4px 14px rgba(6,182,212,0.15); }
-:root[data-theme="light"] .focus\:border-violet-600:focus { border-color: #0891b2 !important; box-shadow: 0 0 0 3px rgba(6,182,212,0.15); }
+:root[data-theme="light"] .hover\:border-violet-500\/40:hover { border-color: rgba(6,182,212,0.6) !important; }
+:root[data-theme="light"] .focus\:border-violet-600:focus {
+  border-color: #0891b2 !important;
+  box-shadow: 0 0 0 3px rgba(6,182,212,0.15);
+}
 :root[data-theme="light"] .hover\:border-violet-600:hover { border-color: #0891b2 !important; }
 :root[data-theme="light"] .hover\:text-violet-300:hover { color: #06b6d4 !important; }
-:root[data-theme="light"] .from-violet-600\/\[0\.03\] { --tw-gradient-from: rgba(6,182,212,0.06) !important; }
-:root[data-theme="light"] .from-violet-600\/\[0\.05\] { --tw-gradient-from: rgba(6,182,212,0.10) !important; }
-:root[data-theme="light"] .via-neutral-950 { --tw-gradient-via: #ffffff !important; }
-:root[data-theme="light"] .to-neutral-950,
-:root[data-theme="light"] .to-neutral-950\/40 { --tw-gradient-to: #ffffff !important; }
-:root[data-theme="light"] .from-neutral-950 { --tw-gradient-from: #ffffff !important; }
 
-/* semantic tones stay green/red but deeper */
+/* Gradient card backgrounds in light — colorful hero */
+:root[data-theme="light"] .from-violet-600\/\[0\.05\] { --tw-gradient-from: rgba(6,182,212,0.18) !important; }
+:root[data-theme="light"] .from-violet-600\/\[0\.08\] { --tw-gradient-from: rgba(6,182,212,0.22) !important; }
+:root[data-theme="light"] .from-violet-600\/\[0\.03\] { --tw-gradient-from: rgba(6,182,212,0.12) !important; }
+:root[data-theme="light"] .via-neutral-950 { --tw-gradient-via: rgba(255,255,255,0.9) !important; }
+:root[data-theme="light"] .to-neutral-950,
+:root[data-theme="light"] .to-neutral-950\/40 { --tw-gradient-to: rgba(255,255,255,0.85) !important; }
+:root[data-theme="light"] .from-neutral-950  { --tw-gradient-from: rgba(255,255,255,0.9) !important; }
+/* Force gradients back in light (we killed them in dark globally) */
+:root[data-theme="light"] .bg-gradient-to-br { background-image: linear-gradient(to bottom right, var(--tw-gradient-stops)) !important; }
+:root[data-theme="light"] .bg-gradient-to-b  { background-image: linear-gradient(to bottom,       var(--tw-gradient-stops)) !important; }
+:root[data-theme="light"] .bg-gradient-to-r  { background-image: linear-gradient(to right,        var(--tw-gradient-stops)) !important; }
+
+/* Blur orb decoration on Profile hero — recolor cyan in light */
+:root[data-theme="light"] .blur-3xl.bg-violet-500\/10 { background-color: rgba(251,146,60,0.30) !important; }
+
+/* semantic tones */
 :root[data-theme="light"] .text-emerald-400   { color: #059669 !important; }
 :root[data-theme="light"] .text-emerald-300   { color: #10b981 !important; }
 :root[data-theme="light"] .text-red-400       { color: #dc2626 !important; }
@@ -146,27 +177,21 @@ body {
 :root[data-theme="light"] .bg-red-500\/10     { background-color: rgba(239,68,68,0.14) !important; }
 :root[data-theme="light"] .border-red-500\/20 { border-color: rgba(239,68,68,0.35) !important; }
 :root[data-theme="light"] .bg-amber-500\/10   { background-color: rgba(245,158,11,0.14) !important; }
-:root[data-theme="light"] .bg-amber-500\/\[0\.03\] { background-color: rgba(245,158,11,0.08) !important; }
+:root[data-theme="light"] .bg-amber-500\/\[0\.03\] { background-color: rgba(245,158,11,0.10) !important; }
 :root[data-theme="light"] .text-amber-200\/80,
 :root[data-theme="light"] .text-amber-300     { color: #b45309 !important; }
 :root[data-theme="light"] .text-amber-400     { color: #d97706 !important; }
 :root[data-theme="light"] .border-amber-500\/20 { border-color: rgba(217,119,6,0.4) !important; }
 
-/* remove the dark shell radial in light — body has its own */
+/* Shell radial (from DashboardShell inline arbitrary bg) — off in light */
 :root[data-theme="light"] .bg-\[radial-gradient\(circle_at_top\,_rgba\(124\,58\,237\,0\.04\)_0\%\,_transparent_50\%\)\] {
   background-image: none !important;
 }
-/* Header/sidebar backdrop-blur containers */
-:root[data-theme="light"] .bg-neutral-950\/60.backdrop-blur { background-color: rgba(255,255,255,0.75) !important; }
-:root[data-theme="light"] .bg-neutral-950\/40.backdrop-blur { background-color: rgba(255,255,255,0.65) !important; }
+/* Header/sidebar glassmorphism in light */
+:root[data-theme="light"] .backdrop-blur { backdrop-filter: blur(16px); }
 
-/* inputs */
+/* Inputs */
 :root[data-theme="light"] input,
 :root[data-theme="light"] textarea,
-:root[data-theme="light"] select { caret-color: #0891b2; color: #0f172a; }
+:root[data-theme="light"] select { caret-color: #0891b2; color: #0f172a; background-color: rgba(255,255,255,0.6); }
 :root[data-theme="light"] input::placeholder { color: #94a3b8; }
-
-/* dark-mode scrollbars (subtle) */
-:root[data-theme="dark"] ::-webkit-scrollbar { width: 10px; height: 10px; }
-:root[data-theme="dark"] ::-webkit-scrollbar-thumb { background: #1f1f24; border-radius: 8px; }
-:root[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #2a2a30; }
