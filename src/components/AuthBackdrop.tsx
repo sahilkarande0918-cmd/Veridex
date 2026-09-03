@@ -1,6 +1,5 @@
-// Full-screen looping video backdrop for /login with a visible
-// U-shaped cut at the top-center. A soft violet glow sits BEHIND
-// the video so the transparent cut area shows the glow through.
+// Minimal /login backdrop: looping video on pitch black, with a
+// U-shaped notch cut out of the top-center. No glows, no vignette.
 
 import { useEffect, useRef } from 'react'
 
@@ -18,14 +17,13 @@ export default function AuthBackdrop() {
 
     let tries = 0
     const tryPlay = () => {
-      v.play().then(() => { /* playing */ }).catch(() => {
+      v.play().catch(() => {
         if (tries++ < 20) setTimeout(tryPlay, 250)
       })
     }
     if (v.readyState >= 2) tryPlay()
     else v.addEventListener('canplay', tryPlay, { once: true })
 
-    // one-time page-click fallback for any browser that still refuses
     const kick = () => { if (v.paused) tryPlay() }
     document.addEventListener('pointerdown', kick, { once: true })
 
@@ -38,23 +36,13 @@ export default function AuthBackdrop() {
     }
   }, [])
 
-  // 260px radius circle at top-center. Transparent inside → the glow
-  // behind the video shines through the U-cut.
+  // U-shaped cut at top-center. Transparent inside → pure black (the
+  // parent's bg-black) shows through the notch.
   const uCutMask =
     'radial-gradient(circle 260px at 50% 0%, transparent 0, transparent 256px, black 260px)'
 
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden bg-black">
-      {/* Layer 1: violet glow BEHIND the video, visible through the U-cut */}
-      <div
-        className="absolute inset-x-0 top-0 h-96 pointer-events-none"
-        style={{
-          background:
-            'radial-gradient(ellipse 500px 300px at 50% -20%, rgba(139, 92, 246, 0.55), rgba(139, 92, 246, 0.15) 40%, transparent 70%)',
-        }}
-      />
-
-      {/* Layer 2: the video with the U cut */}
       <video
         ref={ref}
         src="/login-bg.mp4"
@@ -65,15 +53,6 @@ export default function AuthBackdrop() {
         style={{
           maskImage: uCutMask,
           WebkitMaskImage: uCutMask,
-        }}
-      />
-
-      {/* Layer 3: gentle center vignette so the form reads clearly */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            'radial-gradient(ellipse 60% 50% at 50% 60%, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 40%, rgba(0,0,0,0.15) 70%, transparent 100%)',
         }}
       />
     </div>
