@@ -9,6 +9,7 @@ import Charts from '@/routes/dashboard/Charts'
 import Portfolio from '@/routes/dashboard/Portfolio'
 import Screener from '@/routes/dashboard/Screener'
 import News from '@/routes/dashboard/News'
+import Signals from '@/routes/dashboard/Signals'
 import Placeholder from '@/routes/dashboard/Placeholder'
 
 export default function App() {
@@ -26,6 +27,7 @@ export default function App() {
             <Route path="charts"    element={<Charts />} />
             <Route path="portfolio" element={<Portfolio />} />
             <Route path="screener"  element={<Screener />} />
+            <Route path="signals"   element={<Signals />} />
             <Route path="news"      element={<News />} />
             <Route path="chat"      element={<Placeholder title="AI Chat"   phase="Phase 8" />} />
           </Route>

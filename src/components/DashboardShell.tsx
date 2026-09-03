@@ -9,6 +9,7 @@ const navItems: { to: string; label: string }[] = [
   { to: '/dashboard/charts',    label: 'Charts' },
   { to: '/dashboard/portfolio', label: 'Portfolio' },
   { to: '/dashboard/screener',  label: 'Screener' },
+  { to: '/dashboard/signals',   label: 'Signals' },
   { to: '/dashboard/news',      label: 'News' },
   { to: '/dashboard/chat',      label: 'AI Chat' },
 ]
