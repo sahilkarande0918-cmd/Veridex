@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
+import AuthBackdrop from '@/components/AuthBackdrop'
 
 export default function Login() {
   const { user, loading, signInEmail, signUpEmail, signInGoogle } = useAuth()
@@ -32,8 +33,9 @@ export default function Login() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-6">
-      <div className="w-full max-w-sm space-y-6">
+    <main className="min-h-screen flex items-center justify-center px-6 relative">
+      <AuthBackdrop />
+      <div className="w-full max-w-sm space-y-6 rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl p-8 shadow-2xl">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-semibold tracking-tight">Veridex</h1>
           <p className="text-sm text-neutral-400">
