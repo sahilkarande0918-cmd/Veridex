@@ -25,12 +25,17 @@ npm install
 npm run dev
 ```
 
+## Supabase setup (one-time)
+
+1. Open the Supabase dashboard → **SQL Editor** → paste `supabase/migrations/0001_initial_schema.sql` → **Run**.
+2. **Authentication** → **Providers** → enable **Email** (auto-on) and, when creds are ready, **Google** (paste client id + secret; whitelist your dashboard's redirect URL as shown on the same page).
+
 ## Ship phases
 
 | # | Phase                                | Status |
 |---|--------------------------------------|--------|
 | 0 | Scaffold                             | ✅     |
-| 1 | Supabase schema + Auth               | ⏳     |
+| 1 | Supabase schema + Auth               | ✅     |
 | 2 | Landing + dashboard shell            | ⏳     |
 | 3 | Upstox proxy + live charts           | ⏳     |
 | 4 | Portfolio tracker                    | ⏳     |
