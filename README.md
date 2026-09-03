@@ -27,7 +27,7 @@ npm run dev
 
 ## Supabase setup (one-time)
 
-1. Open the Supabase dashboard → **SQL Editor** → paste `supabase/migrations/0001_initial_schema.sql` → **Run**.
+1. Open the Supabase dashboard → **SQL Editor** → run each file in `supabase/migrations/` in order.
 2. **Authentication** → **Providers** → enable **Email** (auto-on) and, when creds are ready, **Google** (paste client id + secret; whitelist your dashboard's redirect URL as shown on the same page).
 3. **Edge Functions** — install the [Supabase CLI](https://supabase.com/docs/guides/cli) and:
    ```bash
@@ -36,8 +36,16 @@ npm run dev
    supabase secrets set \
      UPSTOX_ACCESS_TOKEN=<paste from .env> \
      NEWSAPI_KEY=<paste from .env> \
-     GROQ_API_KEY=<paste from .env>
-   supabase functions deploy upstox-quote upstox-candles news-feed news-search sentiment chat
+     GROQ_API_KEY=<paste from .env> \
+     FIREBASE_PROJECT_ID=veridex-ad8d8 \
+     FIREBASE_CLIENT_EMAIL=<from service-account JSON> \
+     FIREBASE_PRIVATE_KEY="<from service-account JSON, keep the \\n escapes>"
+   supabase functions deploy upstox-quote upstox-candles news-feed news-search sentiment chat nudge-reviews
+   ```
+4. **Schedule the nudger** (Supabase dashboard → Database → **pg_cron**):
+   ```sql
+   select cron.schedule('nudge-reviews', '0 6 * * *',
+     $$ select net.http_post(url:='https://<project>.functions.supabase.co/nudge-reviews') $$);
    ```
    The charts view calls these two functions; without them it renders an inline "deploy the Edge Functions" prompt instead of the chart.
 
@@ -54,7 +62,7 @@ npm run dev
 | 6 | News + IPO feed                      | ✅     |
 | 7 | Sentiment + anomaly signals          | ✅     |
 | 8 | Grounded AI chat                     | ✅     |
-| 9 | FCM review reminders                 | ⏳     |
+| 9 | FCM review reminders                 | ✅     |
 | 10| Production deploy                    | ⏳     |
 
 ## Ground rules

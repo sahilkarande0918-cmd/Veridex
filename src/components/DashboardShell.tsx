@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { useAuth } from '@/lib/auth'
 import MarketStatus from './MarketStatus'
 import Disclaimer from './Disclaimer'
+import AlertsBell from './AlertsBell'
 
 const navItems: { to: string; label: string }[] = [
   { to: '/dashboard',           label: 'Overview' },
@@ -57,7 +58,10 @@ export default function DashboardShell() {
       <div className="flex flex-col min-w-0">
         <header className="h-14 border-b border-neutral-900 flex items-center justify-between px-6">
           <div className="text-sm text-neutral-400">Dashboard</div>
-          <MarketStatus />
+          <div className="flex items-center gap-4">
+            <MarketStatus />
+            <AlertsBell />
+          </div>
         </header>
         <main className="flex-1 p-6 overflow-auto">
           <Outlet />
