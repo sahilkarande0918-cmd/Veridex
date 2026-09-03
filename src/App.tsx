@@ -10,7 +10,7 @@ import Portfolio from '@/routes/dashboard/Portfolio'
 import Screener from '@/routes/dashboard/Screener'
 import News from '@/routes/dashboard/News'
 import Signals from '@/routes/dashboard/Signals'
-import Placeholder from '@/routes/dashboard/Placeholder'
+import Chat from '@/routes/dashboard/Chat'
 
 export default function App() {
   return (
@@ -29,7 +29,7 @@ export default function App() {
             <Route path="screener"  element={<Screener />} />
             <Route path="signals"   element={<Signals />} />
             <Route path="news"      element={<News />} />
-            <Route path="chat"      element={<Placeholder title="AI Chat"   phase="Phase 8" />} />
+            <Route path="chat"      element={<Chat />} />
           </Route>
           <Route path="*" element={<Landing />} />
         </Routes>

@@ -37,7 +37,7 @@ npm run dev
      UPSTOX_ACCESS_TOKEN=<paste from .env> \
      NEWSAPI_KEY=<paste from .env> \
      GROQ_API_KEY=<paste from .env>
-   supabase functions deploy upstox-quote upstox-candles news-feed news-search sentiment
+   supabase functions deploy upstox-quote upstox-candles news-feed news-search sentiment chat
    ```
    The charts view calls these two functions; without them it renders an inline "deploy the Edge Functions" prompt instead of the chart.
 
@@ -53,7 +53,7 @@ npm run dev
 | 5 | Fundamentals screener                | ✅     |
 | 6 | News + IPO feed                      | ✅     |
 | 7 | Sentiment + anomaly signals          | ✅     |
-| 8 | Grounded AI chat                     | ⏳     |
+| 8 | Grounded AI chat                     | ✅     |
 | 9 | FCM review reminders                 | ⏳     |
 | 10| Production deploy                    | ⏳     |
 
