@@ -52,7 +52,7 @@ export default function Landing() {
         <h1 className="text-6xl font-semibold tracking-tight leading-none">
           Stock analysis you<br />can actually verify.
         </h1>
-        <p className="text-neutral-400 text-lg max-w-xl mx-auto">
+        <p className="text-neutral-200 text-lg max-w-xl mx-auto drop-shadow-lg">
           Live Upstox market data, transparent backtested signal accuracy,
           and AI explanations grounded in real computed numbers.
           Never a bare "buy this" tip.
@@ -84,24 +84,28 @@ export default function Landing() {
       <motion.section
         initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }}
         variants={fadeUp}
-        className="max-w-3xl mx-auto px-6 py-16 space-y-4"
+        className="max-w-3xl mx-auto px-6 py-10"
       >
-        <h2 className="text-2xl font-semibold">Ground rules</h2>
-        <ul className="space-y-2 text-sm text-neutral-400">
-          {groundRules.map((r) => (
-            <li key={r} className="flex gap-3">
-              <span className="text-violet-500 mt-1.5 size-1.5 rounded-full bg-violet-500 shrink-0" />
-              <span>{r}</span>
-            </li>
-          ))}
-        </ul>
+        <div className="rounded-2xl border border-neutral-900 bg-neutral-950/80 backdrop-blur p-6 space-y-4">
+          <h2 className="text-2xl font-semibold">Ground rules</h2>
+          <ul className="space-y-2 text-sm text-neutral-300">
+            {groundRules.map((r) => (
+              <li key={r} className="flex gap-3">
+                <span className="mt-2 size-1.5 rounded-full bg-violet-500 shrink-0" />
+                <span>{r}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </motion.section>
 
-      <footer className="max-w-3xl mx-auto text-center px-6 py-16 border-t border-neutral-900">
-        <p className="text-xs text-neutral-600">
-          Not SEBI-registered investment advice. Educational/analytical tool only.
-          Investments in securities are subject to market risk.
-        </p>
+      <footer className="max-w-3xl mx-auto px-6 pb-10">
+        <div className="rounded-xl border border-neutral-900 bg-neutral-950/80 backdrop-blur p-4 text-center">
+          <p className="text-xs text-neutral-400">
+            Not SEBI-registered investment advice. Educational/analytical tool only.
+            Investments in securities are subject to market risk.
+          </p>
+        </div>
       </footer>
     </main>
   )

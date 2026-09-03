@@ -1,9 +1,9 @@
-// Minimal /login backdrop: looping video on pitch black, with a
-// U-shaped notch cut out of the top-center. No glows, no vignette.
+// Full-screen looping video backdrop for the landing page. No cut,
+// with a uniform dark overlay so text sits legibly on top.
 
 import { useEffect, useRef } from 'react'
 
-export default function AuthBackdrop() {
+export default function VideoBackdrop() {
   const ref = useRef<HTMLVideoElement | null>(null)
 
   useEffect(() => {
@@ -17,29 +17,20 @@ export default function AuthBackdrop() {
 
     let tries = 0
     const tryPlay = () => {
-      v.play().catch(() => {
-        if (tries++ < 20) setTimeout(tryPlay, 250)
-      })
+      v.play().catch(() => { if (tries++ < 20) setTimeout(tryPlay, 250) })
     }
     if (v.readyState >= 2) tryPlay()
     else v.addEventListener('canplay', tryPlay, { once: true })
 
     const kick = () => { if (v.paused) tryPlay() }
     document.addEventListener('pointerdown', kick, { once: true })
-
     const onVis = () => document.visibilityState === 'visible' && v.paused && tryPlay()
     document.addEventListener('visibilitychange', onVis)
-
     return () => {
       document.removeEventListener('visibilitychange', onVis)
       document.removeEventListener('pointerdown', kick)
     }
   }, [])
-
-  // U-shaped cut at top-center. Transparent inside → pure black (the
-  // parent's bg-black) shows through the notch.
-  const uCutMask =
-    'radial-gradient(circle 260px at 50% 0%, transparent 0, transparent 256px, black 260px)'
 
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden bg-black">
@@ -50,11 +41,9 @@ export default function AuthBackdrop() {
         preload="auto"
         disablePictureInPicture
         className="absolute inset-0 w-full h-full object-cover"
-        style={{
-          maskImage: uCutMask,
-          WebkitMaskImage: uCutMask,
-        }}
       />
+      {/* Uniform dim so hero text is readable over the busy footage */}
+      <div className="absolute inset-0 pointer-events-none bg-black/60" />
     </div>
   )
 }
