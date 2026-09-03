@@ -7,6 +7,7 @@ import DashboardShell from '@/components/DashboardShell'
 import Overview from '@/routes/dashboard/Overview'
 import Charts from '@/routes/dashboard/Charts'
 import Portfolio from '@/routes/dashboard/Portfolio'
+import Screener from '@/routes/dashboard/Screener'
 import Placeholder from '@/routes/dashboard/Placeholder'
 
 export default function App() {
@@ -23,7 +24,7 @@ export default function App() {
             <Route index element={<Overview />} />
             <Route path="charts"    element={<Charts />} />
             <Route path="portfolio" element={<Portfolio />} />
-            <Route path="screener"  element={<Placeholder title="Screener"  phase="Phase 5" />} />
+            <Route path="screener"  element={<Screener />} />
             <Route path="news"      element={<Placeholder title="News"      phase="Phase 6" />} />
             <Route path="chat"      element={<Placeholder title="AI Chat"   phase="Phase 8" />} />
           </Route>

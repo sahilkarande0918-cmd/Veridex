@@ -47,7 +47,7 @@ npm run dev
 | 2 | Landing + dashboard shell            | ✅     |
 | 3 | Upstox proxy + live charts           | ✅     |
 | 4 | Portfolio tracker                    | ✅     |
-| 5 | Fundamentals screener                | ⏳     |
+| 5 | Fundamentals screener                | ✅     |
 | 6 | News + IPO feed                      | ⏳     |
 | 7 | Sentiment + anomaly signals          | ⏳     |
 | 8 | Grounded AI chat                     | ⏳     |
