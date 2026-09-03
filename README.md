@@ -29,6 +29,14 @@ npm run dev
 
 1. Open the Supabase dashboard → **SQL Editor** → paste `supabase/migrations/0001_initial_schema.sql` → **Run**.
 2. **Authentication** → **Providers** → enable **Email** (auto-on) and, when creds are ready, **Google** (paste client id + secret; whitelist your dashboard's redirect URL as shown on the same page).
+3. **Edge Functions** — install the [Supabase CLI](https://supabase.com/docs/guides/cli) and:
+   ```bash
+   supabase login
+   supabase link --project-ref jjxcphbfqahxeohxcupt
+   supabase secrets set UPSTOX_ACCESS_TOKEN=<paste from .env>
+   supabase functions deploy upstox-quote upstox-candles
+   ```
+   The charts view calls these two functions; without them it renders an inline "deploy the Edge Functions" prompt instead of the chart.
 
 ## Ship phases
 
@@ -37,7 +45,7 @@ npm run dev
 | 0 | Scaffold                             | ✅     |
 | 1 | Supabase schema + Auth               | ✅     |
 | 2 | Landing + dashboard shell            | ✅     |
-| 3 | Upstox proxy + live charts           | ⏳     |
+| 3 | Upstox proxy + live charts           | ✅     |
 | 4 | Portfolio tracker                    | ⏳     |
 | 5 | Fundamentals screener                | ⏳     |
 | 6 | News + IPO feed                      | ⏳     |

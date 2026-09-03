@@ -6,6 +6,7 @@ import Disclaimer from './Disclaimer'
 
 const navItems: { to: string; label: string }[] = [
   { to: '/dashboard',           label: 'Overview' },
+  { to: '/dashboard/charts',    label: 'Charts' },
   { to: '/dashboard/portfolio', label: 'Portfolio' },
   { to: '/dashboard/screener',  label: 'Screener' },
   { to: '/dashboard/news',      label: 'News' },
