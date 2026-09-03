@@ -2,16 +2,35 @@
 // U-shaped cut carved out of the top-center. The cut is done with a
 // CSS mask (radial-gradient) — no JS, no reflow, no lag.
 
+import { useEffect, useRef } from 'react'
+
 export default function AuthBackdrop() {
-  // A radial gradient centered at the top edge: transparent inside a
-  // 220px radius → black outside. As a mask, transparent hides the
-  // video, so the top-center becomes a smooth U-shaped notch.
+  const ref = useRef<HTMLVideoElement | null>(null)
+
+  // React sets `muted` as a property, not the initial HTML attribute,
+  // so Chrome's autoplay policy blocks it. Force-mute + play on mount.
+  useEffect(() => {
+    const v = ref.current
+    if (!v) return
+    v.muted = true
+    v.defaultMuted = true
+    v.setAttribute('muted', '')
+    // Nudge the play. Catch silently on the rare browsers that still refuse.
+    const tryPlay = () => v.play().catch(() => {})
+    tryPlay()
+    // Resume if the browser pauses on tab-refocus
+    const onVis = () => document.visibilityState === 'visible' && v.paused && tryPlay()
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [])
+
   const uCutMask =
     'radial-gradient(circle 220px at 50% 0%, transparent 0, transparent 216px, black 220px)'
 
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden bg-black">
       <video
+        ref={ref}
         src="/login-bg.mp4"
         autoPlay muted loop playsInline
         preload="auto"
