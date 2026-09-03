@@ -71,7 +71,7 @@ Deno.serve(async (req: Request) => {
     method: 'POST',
     headers: { Authorization: `Bearer ${GROQ}`, 'content-type': 'application/json' },
     body: JSON.stringify({
-      model: 'llama-3.1-8b-instant',
+      model: 'openai/gpt-oss-20b',
       temperature: 0,
       response_format: { type: 'json_object' },
       messages: prompt,
