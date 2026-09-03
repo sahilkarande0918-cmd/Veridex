@@ -9,6 +9,7 @@ import Protected from '@/routes/Protected'
 // don't ship ApexCharts, lightweight-charts, or the Firebase SDK.
 const DashboardShell = lazy(() => import('@/components/DashboardShell'))
 const Overview  = lazy(() => import('@/routes/dashboard/Overview'))
+const Profile   = lazy(() => import('@/routes/dashboard/Profile'))
 const Charts    = lazy(() => import('@/routes/dashboard/Charts'))
 const Portfolio = lazy(() => import('@/routes/dashboard/Portfolio'))
 const Screener  = lazy(() => import('@/routes/dashboard/Screener'))
@@ -29,6 +30,7 @@ export default function App() {
               element={<Protected><DashboardShell /></Protected>}
             >
               <Route index element={<Overview />} />
+              <Route path="profile"   element={<Profile />} />
               <Route path="charts"    element={<Charts />} />
               <Route path="portfolio" element={<Portfolio />} />
               <Route path="screener"  element={<Screener />} />
