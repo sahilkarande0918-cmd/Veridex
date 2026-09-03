@@ -63,7 +63,40 @@ npm run dev
 | 7 | Sentiment + anomaly signals          | ✅     |
 | 8 | Grounded AI chat                     | ✅     |
 | 9 | FCM review reminders                 | ✅     |
-| 10| Production deploy                    | ⏳     |
+| 10| Production deploy                    | ✅     |
+
+## Deploy
+
+**Frontend (Vercel):**
+```bash
+npm i -g vercel
+vercel                # first-run: link the project
+vercel env add VITE_SUPABASE_URL              # paste value; repeat for each VITE_* below
+# VITE_SUPABASE_ANON_KEY
+# VITE_FIREBASE_API_KEY
+# VITE_FIREBASE_AUTH_DOMAIN
+# VITE_FIREBASE_PROJECT_ID
+# VITE_FIREBASE_STORAGE_BUCKET
+# VITE_FIREBASE_MESSAGING_SENDER_ID
+# VITE_FIREBASE_APP_ID
+# VITE_FIREBASE_VAPID_KEY
+vercel --prod
+```
+
+The `vercel.json` already sets an SPA rewrite (everything → `/index.html`) and
+excludes the FCM service worker + static assets from that rewrite.
+
+**Backend (already covered in "Supabase setup" above):** Edge Functions on Supabase,
+migrations via SQL editor, `pg_cron` schedules `nudge-reviews` daily at 06:00 UTC.
+
+## Security model — which values are where
+
+| Value | Where it lives | Sensitivity |
+|---|---|---|
+| `SUPABASE_SERVICE_ROLE_KEY`, `UPSTOX_ACCESS_TOKEN`, `GROQ_API_KEY`, `NEWSAPI_KEY`, `FIREBASE_PRIVATE_KEY` | **Supabase Edge Function secrets only** | Never in the browser bundle |
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | Client bundle | Public by Supabase design — RLS enforces access |
+| `VITE_FIREBASE_*` (apiKey, authDomain, projectId, appId, VAPID) | Client bundle + service worker | [Public by Firebase design](https://firebase.google.com/docs/projects/api-keys) — Firebase security rules enforce access |
+| `.env`, `veridex-*firebase-adminsdk*.json` | Local only, gitignored | Never committed |
 
 ## Ground rules
 
