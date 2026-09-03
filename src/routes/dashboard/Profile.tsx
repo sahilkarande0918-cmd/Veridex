@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { listHoldings, type Holding } from '@/lib/portfolio'
 import { fetchQuote } from '@/lib/upstox'
 import { bySymbol, INSTRUMENTS } from '@/lib/instruments'
+import { useCountUp } from '@/lib/useCountUp'
 import AllocationChart from '@/components/AllocationChart'
 import Disclaimer from '@/components/Disclaimer'
 
@@ -70,6 +72,7 @@ export default function ProfilePage() {
 
   const cash = profile?.capital_available ?? 0
   const netWorth = totals.current + cash
+  const netWorthAnim = useCountUp(netWorth, 900)
 
   const sectorSlices = useMemo(() => {
     const map: Record<string, number> = {}
@@ -102,9 +105,14 @@ export default function ProfilePage() {
       </div>
 
       {/* Net worth strip */}
-      <div className="rounded-2xl border border-neutral-900 bg-gradient-to-br from-violet-600/[0.05] via-neutral-950 to-neutral-950 p-6">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="rounded-2xl border border-neutral-900 bg-gradient-to-br from-violet-600/[0.08] via-neutral-950 to-neutral-950 p-6 relative overflow-hidden"
+      >
+        <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-violet-500/10 blur-3xl pointer-events-none" />
         <div className="text-[10px] uppercase tracking-wider text-neutral-500">Total net worth</div>
-        <div className="text-4xl font-semibold tabular mt-1">₹{fmt(netWorth)}</div>
+        <div className="text-4xl font-semibold tabular mt-1">₹{fmt(netWorthAnim)}</div>
         <div className={`text-sm tabular mt-1 ${totals.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
           {totals.pnl >= 0 ? '▲' : '▼'} ₹{fmt(Math.abs(totals.pnl))} ({totals.pnlPct.toFixed(2)}%)
           <span className="text-neutral-500 ml-2">on stocks</span>
@@ -115,7 +123,7 @@ export default function ProfilePage() {
           <Stat label="Cash / free capital" value={`₹${fmt(cash)}`} />
           <Stat label="Positions" value={String(rows.length)} />
         </div>
-      </div>
+      </motion.div>
 
       {/* Composition + best/worst */}
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-4">

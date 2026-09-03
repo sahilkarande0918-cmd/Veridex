@@ -1,11 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import Onboarding from '@/components/Onboarding'
 import { listHoldings, type Holding } from '@/lib/portfolio'
 import { fetchQuote } from '@/lib/upstox'
 import { fetchMarketSummary, type MarketSummary } from '@/lib/market'
 import { fetchFeed, relTime, type NewsItem } from '@/lib/news'
 import { bySymbol } from '@/lib/instruments'
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 12 },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] } },
+}
+const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } }
 
 export default function Overview() {
   const [holdings, setHoldings] = useState<Holding[]>([])
@@ -46,7 +53,10 @@ export default function Overview() {
         </div>
 
         {/* KPI strip */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <motion.div
+          initial="hidden" animate="show" variants={stagger}
+          className="grid grid-cols-2 lg:grid-cols-4 gap-3"
+        >
           <Kpi
             label="Portfolio value"
             value={portfolio.count === 0 ? '—' : `₹${fmt(portfolio.current)}`}
@@ -74,10 +84,13 @@ export default function Overview() {
             tone="pos"
             to="/dashboard/charts"
           />
-        </div>
+        </motion.div>
 
         {/* Two-column feature strip */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <motion.div
+          initial="hidden" animate="show" variants={stagger}
+          className="grid grid-cols-1 lg:grid-cols-2 gap-4"
+        >
           {/* Movers card */}
           <LinkCard to="/dashboard/charts" title="Top movers" note="Live · from your universe">
             <div className="grid grid-cols-2 gap-3 mt-3">
@@ -124,7 +137,7 @@ export default function Overview() {
               <Chip>screener top-3</Chip>
             </div>
           </LinkCard>
-        </div>
+        </motion.div>
 
         <div className="text-[10px] text-neutral-600 border-t border-neutral-900 pt-3">
           Not SEBI-registered investment advice. Educational/analytical tool only.
@@ -147,15 +160,17 @@ function Kpi({
 }) {
   const toneCls = tone === 'pos' ? 'text-emerald-400' : tone === 'neg' ? 'text-red-400' : 'text-neutral-100'
   return (
+    <motion.div variants={fadeUp} whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 400, damping: 30 }}>
     <Link
       to={to}
-      className="group relative rounded-xl border border-neutral-900 bg-gradient-to-br from-neutral-950 to-neutral-950/40 p-4 hover:border-violet-500/40 transition overflow-hidden"
+      className="group relative rounded-xl border border-neutral-900 bg-gradient-to-br from-neutral-950 to-neutral-950/40 p-4 hover:border-violet-500/40 transition overflow-hidden block"
     >
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition bg-gradient-to-br from-violet-600/[0.03] to-transparent pointer-events-none" />
       <div className="text-[10px] uppercase tracking-wider text-neutral-500">{label}</div>
       <div className={`text-xl font-semibold tabular mt-1 ${toneCls}`}>{value}</div>
       {sub && <div className={`text-[11px] tabular mt-0.5 ${tone === 'pos' ? 'text-emerald-400/70' : tone === 'neg' ? 'text-red-400/70' : 'text-neutral-500'}`}>{sub}</div>}
     </Link>
+    </motion.div>
   )
 }
 
@@ -168,6 +183,7 @@ function LinkCard({
   children: React.ReactNode
 }) {
   return (
+    <motion.div variants={fadeUp} whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 400, damping: 30 }}>
     <Link
       to={to}
       className="group rounded-xl border border-neutral-900 bg-neutral-950 p-4 hover:border-violet-500/40 transition block"
@@ -181,6 +197,7 @@ function LinkCard({
       </div>
       {children}
     </Link>
+    </motion.div>
   )
 }
 
