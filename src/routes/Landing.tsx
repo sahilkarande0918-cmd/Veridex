@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { motion, type Variants } from 'framer-motion'
+import VideoBackdrop from '@/components/VideoBackdrop'
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 24 },
@@ -26,7 +27,8 @@ const groundRules: string[] = [
 
 export default function Landing() {
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen relative">
+      <VideoBackdrop />
       <nav className="max-w-6xl mx-auto flex items-center justify-between p-6">
         <div className="flex items-center gap-2 font-semibold tracking-tight">
           <span className="size-2 rounded-full bg-violet-500" /> Veridex
