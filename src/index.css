@@ -213,3 +213,47 @@ body {
 :root[data-theme="light"] .vx-appbar,
 :root[data-theme="light"] .vx-appbar > * { box-shadow: none !important; }
 :root[data-theme="light"] .vx-appbar { box-shadow: 0 1px 0 rgba(15, 23, 42, 0.06) !important; }
+
+/* =====================================================================
+   Always-dark surfaces.
+   The landing page sits on a fixed dark video, so it must keep the dark
+   palette even when the app theme is light — otherwise light-theme text
+   (dark navy) lands on dark footage and disappears.
+
+   Specificity note: the light-theme rules are `:root[data-theme="light"]
+   .text-neutral-200` (0,3,0) and also use !important, so a plain
+   `[data-surface="dark"] .x` (0,2,0) loses. The `:root[data-theme]`
+   prefix below scores 0,4,0 and wins in both themes.
+   ===================================================================== */
+:root[data-theme] [data-surface="dark"]                   { color: #fafafa !important; }
+:root[data-theme] [data-surface="dark"] .text-neutral-100 { color: #fafafa !important; }
+:root[data-theme] [data-surface="dark"] .text-neutral-200 { color: #e5e5e5 !important; }
+:root[data-theme] [data-surface="dark"] .text-neutral-300 { color: #d4d4d4 !important; }
+:root[data-theme] [data-surface="dark"] .text-neutral-400 { color: #b3b3b3 !important; }
+:root[data-theme] [data-surface="dark"] .text-neutral-500 { color: #a0a0a0 !important; }
+:root[data-theme] [data-surface="dark"] .text-neutral-600 { color: #8a8a8a !important; }
+:root[data-theme] [data-surface="dark"] .text-violet-400  { color: #a78bfa !important; }
+:root[data-theme] [data-surface="dark"] .text-violet-500  { color: #8b5cf6 !important; }
+
+/* Cards float as dark glass over the video, never white. */
+:root[data-theme] [data-surface="dark"] .bg-neutral-950 {
+  background-color: rgba(10, 10, 10, 0.82) !important;
+  backdrop-filter: blur(10px);
+  box-shadow: none !important;
+}
+:root[data-theme] [data-surface="dark"] .bg-neutral-900     { background-color: rgba(23, 23, 23, 0.9) !important; }
+:root[data-theme] [data-surface="dark"] .border-neutral-800 { border-color: #2e2e2e !important; }
+:root[data-theme] [data-surface="dark"] .border-neutral-900 { border-color: #242424 !important; }
+
+/* Keep the CTA violet even under the light theme's cyan mapping. */
+:root[data-theme] [data-surface="dark"] .bg-violet-500,
+:root[data-theme] [data-surface="dark"] .bg-violet-600 {
+  background-color: #7c3aed !important;
+  background-image: none !important;
+  color: #fff !important;
+  box-shadow: 0 6px 20px -6px rgba(124, 58, 237, 0.6);
+}
+:root[data-theme] [data-surface="dark"] .hover\:bg-violet-500:hover {
+  background-color: #8b5cf6 !important;
+  background-image: none !important;
+}

@@ -27,7 +27,9 @@ const groundRules: string[] = [
 
 export default function Landing() {
   return (
-    <main className="min-h-screen relative">
+    // data-surface="dark": this page always sits on a dark video, so it
+    // keeps the dark palette even when the app theme is light.
+    <main data-surface="dark" className="min-h-screen relative">
       <VideoBackdrop />
       <nav className="max-w-6xl mx-auto flex items-center justify-between p-6">
         <div className="flex items-center gap-2 font-semibold tracking-tight">
@@ -43,16 +45,23 @@ export default function Landing() {
 
       <motion.section
         initial="hidden" animate="show" variants={fadeUp}
-        className="max-w-3xl mx-auto text-center px-6 pt-20 pb-24 space-y-6"
+        className="relative max-w-3xl mx-auto text-center px-6 pt-20 pb-24 space-y-6"
       >
+        {/* Localised scrim: the candlestick footage is busiest right
+            behind the headline, so darken just that patch. */}
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10 pointer-events-none"
+          style={{ background: 'radial-gradient(ellipse 70% 60% at 50% 45%, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.6) 45%, transparent 78%)' }}
+        />
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-neutral-800 text-xs text-neutral-400">
           <span className="size-1.5 rounded-full bg-violet-500 animate-pulse" />
           For Indian retail investors
         </div>
-        <h1 className="text-6xl font-semibold tracking-tight leading-none">
+        <h1 className="text-6xl font-semibold tracking-tight leading-none text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.9)]">
           Stock analysis you<br />can actually verify.
         </h1>
-        <p className="text-neutral-200 text-lg max-w-xl mx-auto drop-shadow-lg">
+        <p className="text-neutral-200 text-lg max-w-xl mx-auto [text-shadow:0_1px_12px_rgba(0,0,0,0.9)]">
           Live Upstox market data, transparent backtested signal accuracy,
           and AI explanations grounded in real computed numbers.
           Never a bare "buy this" tip.
