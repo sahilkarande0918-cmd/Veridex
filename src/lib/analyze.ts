@@ -21,10 +21,25 @@ export type HorizonBlock = {
   [k: string]: unknown
 }
 
+export type Verdict = {
+  call: 'FAVOURABLE' | 'NEUTRAL' | 'UNFAVOURABLE'
+  conviction: number
+  headline: string
+  recommended_horizon: 'intraday' | 'swing_delivery' | 'long_term'
+  reasons: string[]
+  what_would_change_it: string[]
+  risk_reward_ratio: number
+  suggested_stop: number
+  components: Record<string, number>
+  weights: Record<string, number>
+  how: string
+}
+
 export type StockAnalysis = {
   symbol: string
   name: string
   instrument_key: string
+  verdict: Verdict
   quote: {
     last_price: number
     day_change_pct: number | null

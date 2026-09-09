@@ -193,8 +193,75 @@ Deno.serve(async (req: Request) => {
     note: 'Levels are mechanical (20-session extremes and ATR multiples), not chart-pattern judgements.',
   }
 
+  // ---- VERDICT ------------------------------------------------------
+  // A decisive call, computed from the numbers above — never authored
+  // by the language model. Weights are returned so it stays auditable.
+  const bestH = ranked[0].horizon
+  const rateKey = bestH === 'intraday' ? '1d' : bestH === 'swing_delivery' ? '20d' : '60d'
+  const br = baseRates[rateKey] as { prob_up_pct: number | null; edge_vs_unconditional_pp: number | null; sample_size: number; reliability: string; median_move_pct: number | null }
+
+  const rr = risk_downside(live, support) > 0
+    ? risk_upside(live, resistance) / risk_downside(live, support) : 0
+
+  const cBase  = clamp01((((br.prob_up_pct ?? 50) - 40) / 25)) * 100
+  const cEdge  = clamp01((((br.edge_vs_unconditional_pp ?? 0) + 5) / 20)) * 100
+  const cFit   = ranked[0].score
+  const cTrend = (vsSma20 > 0 ? 33 : 0) + (vsSma50 > 0 ? 33 : 0) + (vsSma200 > 0 ? 34 : 0)
+  const cRR    = clamp01(rr / 3) * 100
+
+  const W = { base_rate: 0.30, edge: 0.20, horizon_fit: 0.20, trend: 0.15, risk_reward: 0.15 }
+  let conviction = cBase * W.base_rate + cEdge * W.edge + cFit * W.horizon_fit + cTrend * W.trend + cRR * W.risk_reward
+  if (br.reliability === 'low') conviction *= 0.7   // thin sample → discount
+
+  const call = conviction >= 60 ? 'FAVOURABLE' : conviction >= 42 ? 'NEUTRAL' : 'UNFAVOURABLE'
+  const horizonWord = bestH === 'intraday' ? 'an intraday trade'
+    : bestH === 'swing_delivery' ? 'a swing / delivery position' : 'a long-term hold'
+
+  const headline =
+    call === 'FAVOURABLE'
+      ? `Setup favours ${horizonWord}. Best odds are on the ${labelOf(rateKey)} view.`
+      : call === 'NEUTRAL'
+      ? `Mixed setup. If you take it, ${horizonWord} is the only horizon the numbers support.`
+      : `Numbers do not support an entry here. Better to wait for the setup to reset.`
+
+  const reasons: string[] = []
+  if (br.prob_up_pct != null) reasons.push(`In the same RSI/SMA50 state, price closed higher ${labelOf(rateKey)} later ${br.prob_up_pct}% of the time (n=${br.sample_size}).`)
+  if (br.edge_vs_unconditional_pp != null) {
+    reasons.push(Math.abs(br.edge_vs_unconditional_pp) < 3
+      ? `That is within ~3pp of its all-days rate — effectively no edge from the current setup.`
+      : `That is ${br.edge_vs_unconditional_pp > 0 ? '+' : ''}${br.edge_vs_unconditional_pp}pp versus its all-days rate.`)
+  }
+  reasons.push(`Trend: ${vsSma20 > 0 ? 'above' : 'below'} SMA20, ${vsSma50 > 0 ? 'above' : 'below'} SMA50, ${vsSma200 > 0 ? 'above' : 'below'} SMA200.`)
+  reasons.push(`Risk:reward to the 20-session band is ${round(rr, 2)} : 1 (upside ${round(risk_upside(live, resistance), 2)}% vs downside ${round(risk_downside(live, support), 2)}%).`)
+  if (br.reliability === 'low') reasons.push(`Sample is thin (n=${br.sample_size}) — conviction discounted 30%.`)
+
+  const watch: string[] = []
+  if (vsSma50 <= 0) watch.push(`A close back above SMA50 (₹${round(curSma50 ?? 0, 2)}) would flip the medium-term read.`)
+  if (vsSma200 <= 0) watch.push(`A close above SMA200 (₹${round(curSma200 ?? 0, 2)}) would repair the long-term structure.`)
+  if (curRsi > 70) watch.push(`RSI ${round(curRsi, 1)} is stretched — a cooldown toward 55-60 would give a cleaner entry.`)
+  if (curRsi < 30) watch.push(`RSI ${round(curRsi, 1)} is washed out — a turn back above 35 often marks the reset.`)
+  if (rr < 1) watch.push(`Resistance is closer than support; a break above ₹${round(resistance, 2)} would improve the payoff.`)
+
+  const verdict = {
+    call,
+    conviction: round(conviction, 0),
+    headline,
+    recommended_horizon: bestH,
+    reasons,
+    what_would_change_it: watch,
+    risk_reward_ratio: round(rr, 2),
+    suggested_stop: round(live - 2 * curAtr, 2),
+    components: {
+      base_rate: round(cBase, 0), edge: round(cEdge, 0), horizon_fit: round(cFit, 0),
+      trend: round(cTrend, 0), risk_reward: round(cRR, 0),
+    },
+    weights: W,
+    how: 'Conviction is a fixed-weight blend of the five components above, each 0-100. It is arithmetic on the numbers in this response — no model judgement. Thin base-rate samples cut it by 30%.',
+  }
+
   return json({
     symbol, name, instrument_key: key,
+    verdict,
     quote: {
       last_price: round(live, 2),
       day_change_pct: quote?.pct_change != null ? round(quote.pct_change, 2) : null,
@@ -358,6 +425,10 @@ function quantile(xs: number[], q: number): number {
 }
 const round = (n: number, d: number) => Math.round(n * 10 ** d) / 10 ** d
 const clamp01 = (n: number) => Math.min(1, Math.max(0, Number.isFinite(n) ? n : 0))
+const risk_upside = (live: number, resistance: number) => ((resistance - live) / live) * 100
+const risk_downside = (live: number, support: number) => ((live - support) / live) * 100
+const labelOf = (k: string) =>
+  ({ '1d': '1 session', '5d': '1 week', '20d': '1 month', '60d': '3 months' }[k] ?? k)
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {

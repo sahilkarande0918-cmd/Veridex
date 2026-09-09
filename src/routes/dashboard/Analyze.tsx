@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import SymbolSearch from '@/components/SymbolSearch'
 import Disclaimer from '@/components/Disclaimer'
 import { defaultInstruments, type Instrument } from '@/lib/instruments'
-import { analyzeStock, type StockAnalysis, type BaseRate } from '@/lib/analyze'
+import { analyzeStock, type StockAnalysis, type BaseRate, type Verdict } from '@/lib/analyze'
 
 const HORIZON_LABEL: Record<string, string> = {
   intraday: 'Intraday',
@@ -106,6 +106,9 @@ function Report({ d }: { d: StockAnalysis }) {
         </div>
       </Panel>
 
+      {/* THE CALL */}
+      <VerdictCard v={d.verdict} />
+
       {/* verdict */}
       <Panel>
         <SectionTitle>Best-fit horizon</SectionTitle>
@@ -207,6 +210,89 @@ function Report({ d }: { d: StockAnalysis }) {
         </dl>
       </details>
     </motion.div>
+  )
+}
+
+function VerdictCard({ v }: { v: Verdict }) {
+  const tone = v.call === 'FAVOURABLE'
+    ? { ring: 'border-emerald-500/40', bg: 'bg-emerald-500/[0.06]', text: 'text-emerald-400', bar: 'bg-emerald-500' }
+    : v.call === 'NEUTRAL'
+    ? { ring: 'border-amber-500/40', bg: 'bg-amber-500/[0.06]', text: 'text-amber-400', bar: 'bg-amber-500' }
+    : { ring: 'border-red-500/40', bg: 'bg-red-500/[0.06]', text: 'text-red-400', bar: 'bg-red-500' }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.985 }} animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.35 }}
+      className={`rounded-xl border-2 ${tone.ring} ${tone.bg} p-5`}
+    >
+      <div className="flex items-start justify-between flex-wrap gap-4">
+        <div className="min-w-0">
+          <div className="text-[10px] uppercase tracking-wider text-neutral-500">The call</div>
+          <div className={`text-2xl font-semibold mt-0.5 ${tone.text}`}>{v.call}</div>
+          <p className="text-sm text-neutral-200 mt-1.5 max-w-xl">{v.headline}</p>
+        </div>
+        <div className="text-right shrink-0">
+          <div className="text-[10px] uppercase tracking-wider text-neutral-500">Conviction</div>
+          <div className={`text-4xl font-semibold tabular ${tone.text}`}>{v.conviction}</div>
+          <div className="text-[10px] text-neutral-500">out of 100</div>
+        </div>
+      </div>
+
+      <div className="mt-4 h-1.5 rounded-full bg-neutral-900 overflow-hidden">
+        <div className={`h-full rounded-full ${tone.bar}`} style={{ width: `${Math.min(100, Math.max(0, v.conviction))}%` }} />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 text-xs">
+        <Mini label="Horizon" value={HORIZON_LABEL[v.recommended_horizon]} />
+        <Mini label="Risk : reward" value={`${v.risk_reward_ratio} : 1`} />
+        <Mini label="Suggested stop" value={`₹${v.suggested_stop}`} />
+      </div>
+
+      <div className="mt-4 space-y-1.5">
+        {v.reasons.map((r, i) => (
+          <div key={i} className="flex gap-2 text-xs text-neutral-300">
+            <span className={`mt-1.5 size-1 rounded-full shrink-0 ${tone.bar}`} />
+            <span>{r}</span>
+          </div>
+        ))}
+      </div>
+
+      {v.what_would_change_it.length > 0 && (
+        <div className="mt-4 pt-3 border-t border-neutral-800/60">
+          <div className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1.5">What would change this</div>
+          {v.what_would_change_it.map((w, i) => (
+            <div key={i} className="text-xs text-neutral-400 leading-relaxed">• {w}</div>
+          ))}
+        </div>
+      )}
+
+      <details className="mt-3">
+        <summary className="text-[10px] text-neutral-500 cursor-pointer hover:text-neutral-300">
+          How this call was computed
+        </summary>
+        <div className="mt-2 text-[10px] text-neutral-500 leading-relaxed">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 mb-2">
+            {Object.entries(v.components).map(([k, val]) => (
+              <span key={k} className="tabular">
+                {k.replace(/_/g, ' ')}: <span className="text-neutral-300">{val}</span>
+                <span className="text-neutral-600"> ×{v.weights[k]}</span>
+              </span>
+            ))}
+          </div>
+          {v.how}
+        </div>
+      </details>
+    </motion.div>
+  )
+}
+
+function Mini({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md bg-neutral-950/60 border border-neutral-900 px-3 py-2">
+      <div className="text-[10px] uppercase tracking-wider text-neutral-500">{label}</div>
+      <div className="text-sm font-medium tabular mt-0.5">{value}</div>
+    </div>
   )
 }
 
