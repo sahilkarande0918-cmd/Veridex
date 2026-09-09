@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from './supabase'
+import { cached, invalidate } from './cache'
 
 type AuthCtx = {
   user: User | null
@@ -61,3 +62,14 @@ export function useAuth() {
   if (!v) throw new Error('useAuth must be used inside <AuthProvider>')
   return v
 }
+
+/** Shared profile row read. AlertsBell, Onboarding and Profile all want
+ *  the same row on mount; without this they each fired their own query. */
+export function fetchProfileRow<T = Record<string, unknown>>(userId: string, columns: string): Promise<T | null> {
+  return cached(`profile:${userId}:${columns}`, 30_000, async () => {
+    const { data } = await supabase.from('profiles').select(columns).eq('id', userId).maybeSingle()
+    return (data ?? null) as T | null
+  })
+}
+
+export function invalidateProfile(userId: string) { invalidate(`profile:${userId}`) }

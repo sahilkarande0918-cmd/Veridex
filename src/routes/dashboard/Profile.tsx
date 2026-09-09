@@ -4,9 +4,8 @@ import { motion } from 'framer-motion'
 import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { listHoldings, type Holding } from '@/lib/portfolio'
-import { fetchQuote } from '@/lib/upstox'
-import { resolveSymbols } from '@/lib/instruments'
-import { useCountUp } from '@/lib/useCountUp'
+import { fetchPrices } from '@/lib/quotes'
+import AnimatedNumber from '@/components/AnimatedNumber'
 import AllocationChart from '@/components/AllocationChart'
 import Disclaimer from '@/components/Disclaimer'
 
@@ -38,28 +37,24 @@ export default function ProfilePage() {
 
   useEffect(() => { load() }, [load])
 
+  // One batched snapshot read instead of one edge call per holding.
   useEffect(() => {
     if (holdings.length === 0) return
     let alive = true
     const syms = Array.from(new Set(holdings.map((h) => h.symbol)))
-    const tick = async () => {
-      const map = await resolveSymbols(syms)
-      if (!alive) return
-      syms.forEach((sym) => {
-        const inst = map.get(sym.toUpperCase())
-        if (!inst) return
-        fetchQuote(inst.key)
-          .then((r) => alive && r.price != null && setPrices((p) => ({ ...p, [sym]: r.price! })))
-          .catch(() => {})
+    const tick = () => fetchPrices(syms)
+      .then((m) => {
+        if (!alive) return
+        setPrices(Object.fromEntries(Object.entries(m).map(([k, v]) => [k, v.last_price])))
       })
-    }
+      .catch(() => {})
     tick()
-    const id = window.setInterval(tick, 20_000)
+    const id = window.setInterval(tick, 60_000)
     return () => { alive = false; window.clearInterval(id) }
   }, [holdings])
 
   const rows = useMemo(() => holdings.map((h) => {
-    const ltp = prices[h.symbol]
+    const ltp = prices[h.symbol.toUpperCase()]
     const invested = h.qty * h.buy_price
     const current  = ltp != null ? h.qty * ltp : invested
     const pnl      = current - invested
@@ -77,7 +72,6 @@ export default function ProfilePage() {
 
   const cash = profile?.capital_available ?? 0
   const netWorth = totals.current + cash
-  const netWorthAnim = useCountUp(netWorth, 900)
 
   // Per-stock allocation. Sector data isn't in the NSE master, so we
   // show the split we can compute exactly rather than a guessed one.
@@ -118,7 +112,7 @@ export default function ProfilePage() {
       >
         <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-violet-500/10 blur-3xl pointer-events-none" />
         <div className="text-[10px] uppercase tracking-wider text-neutral-500">Total net worth</div>
-        <div className="text-4xl font-semibold tabular mt-1">₹{fmt(netWorthAnim)}</div>
+        <div className="text-4xl font-semibold tabular mt-1">₹<AnimatedNumber value={netWorth} /></div>
         <div className={`text-sm tabular mt-1 ${totals.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
           {totals.pnl >= 0 ? '▲' : '▼'} ₹{fmt(Math.abs(totals.pnl))} ({totals.pnlPct.toFixed(2)}%)
           <span className="text-neutral-500 ml-2">on stocks</span>

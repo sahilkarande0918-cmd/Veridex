@@ -56,7 +56,7 @@ export default function Signals() {
         </span>
       </div>
       <p className="text-sm text-neutral-500 -mt-2">
-        Volume/price anomalies from 20-day statistics, and headline-tone counts from Groq (Llama 3.3).
+        Volume/price anomalies from 20-day statistics, and headline-tone counts from Groq (GPT-OSS 20B).
         <span className="text-neutral-600"> Signals describe recent behavior — they do not predict future prices.</span>
       </p>
 
@@ -107,7 +107,7 @@ export default function Signals() {
               <div>
                 <div className="text-sm font-medium">Recent headline tone</div>
                 <div className="text-[11px] text-neutral-500">
-                  Groq · Llama 3.3 70B · <span className="text-amber-400">AI-generated</span>
+                  Groq · GPT-OSS 20B · <span className="text-amber-400">AI-generated</span>
                 </div>
               </div>
               <button

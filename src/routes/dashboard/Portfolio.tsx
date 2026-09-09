@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { listHoldings, deleteHolding, type Holding } from '@/lib/portfolio'
-import { fetchQuote } from '@/lib/upstox'
-import { resolveSymbols } from '@/lib/instruments'
+import { fetchPrices } from '@/lib/quotes'
 import AddHoldingModal from '@/components/AddHoldingModal'
 import AllocationChart from '@/components/AllocationChart'
 
@@ -28,33 +27,27 @@ export default function Portfolio() {
 
   useEffect(() => { load() }, [load])
 
-  // Poll LTP per unique symbol every 15s. ponytail: no batch endpoint yet,
-  // 15s cadence keeps request volume tame for a demo portfolio.
+  // One batched market_snapshot read for all holdings (was: one edge
+  // call per symbol every 15s). Snapshot refreshes server-side every
+  // 15 min during market hours, so 60s here is plenty.
   useEffect(() => {
     if (holdings.length === 0) return
     const symbols = Array.from(new Set(holdings.map((h) => h.symbol)))
 
     let alive = true
-    const tick = async () => {
-      const map = await resolveSymbols(symbols)
-      if (!alive) return
-      symbols.forEach((sym) => {
-        const inst = map.get(sym.toUpperCase())
-        if (!inst) return
-        fetchQuote(inst.key)
-          .then((r) => {
-            if (alive && r.price != null) setPrices((p) => ({ ...p, [sym]: r.price! }))
-          })
-          .catch(() => {})
+    const tick = () => fetchPrices(symbols)
+      .then((m) => {
+        if (!alive) return
+        setPrices(Object.fromEntries(Object.entries(m).map(([k, v]) => [k, v.last_price])))
       })
-    }
+      .catch(() => {})
     tick()
-    const id = window.setInterval(tick, 15_000)
+    const id = window.setInterval(tick, 60_000)
     return () => { alive = false; window.clearInterval(id) }
   }, [holdings])
 
   const rows = useMemo(() => holdings.map((h) => {
-    const ltp = prices[h.symbol]
+    const ltp = prices[h.symbol.toUpperCase()]
     const invested = h.qty * h.buy_price
     const current  = ltp != null ? h.qty * ltp : null
     const pnl      = current != null ? current - invested : null

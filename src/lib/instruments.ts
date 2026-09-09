@@ -6,6 +6,7 @@
 // portfolio views resolve the same handful of tickers repeatedly.
 
 import { supabase } from './supabase'
+import { cached } from './cache'
 
 export type Instrument = {
   symbol: string
@@ -44,7 +45,11 @@ export async function searchInstruments(q: string, limit = 20): Promise<Instrume
 }
 
 /** Most actively traded names — shown before the user types anything. */
-export async function defaultInstruments(limit = 20): Promise<Instrument[]> {
+export function defaultInstruments(limit = 20): Promise<Instrument[]> {
+  return cached(`default-instruments:${limit}`, 60_000, () => loadDefaults(limit))
+}
+
+async function loadDefaults(limit: number): Promise<Instrument[]> {
   const { data, error } = await supabase
     .from('market_snapshot')
     .select('instrument_key,trading_symbol,last_price,pct_change,instruments(name,short_name)')

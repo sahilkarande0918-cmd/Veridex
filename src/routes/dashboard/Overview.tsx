@@ -3,10 +3,9 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import Onboarding from '@/components/Onboarding'
 import { listHoldings, type Holding } from '@/lib/portfolio'
-import { fetchQuote } from '@/lib/upstox'
+import { fetchPrices } from '@/lib/quotes'
 import { fetchMarketSummary, type MarketSummary } from '@/lib/market'
 import { fetchFeed, relTime, type NewsItem } from '@/lib/news'
-import { resolveSymbols } from '@/lib/instruments'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 12 },
@@ -28,25 +27,21 @@ export default function Overview() {
     if (holdings.length === 0) return
     let alive = true
     const syms = Array.from(new Set(holdings.map((h) => h.symbol)))
-    resolveSymbols(syms).then((map) => {
-      if (!alive) return
-      syms.forEach((sym) => {
-        const inst = map.get(sym.toUpperCase())
-        if (!inst) return
-        fetchQuote(inst.key)
-          .then((r) => alive && r.price != null && setPrices((p) => ({ ...p, [sym]: r.price! })))
-          .catch(() => {})
+    fetchPrices(syms)
+      .then((m) => {
+        if (!alive) return
+        setPrices(Object.fromEntries(Object.entries(m).map(([k, v]) => [k, v.last_price])))
       })
-    }).catch(() => {})
+      .catch(() => {})
     return () => { alive = false }
   }, [holdings])
 
   const portfolio = useMemo(() => {
     const invested = holdings.reduce((s, h) => s + h.qty * h.buy_price, 0)
-    const current  = holdings.reduce((s, h) => s + h.qty * (prices[h.symbol] ?? h.buy_price), 0)
+    const current  = holdings.reduce((s, h) => s + h.qty * (prices[h.symbol.toUpperCase()] ?? h.buy_price), 0)
     const pnl = current - invested
     const pnlPct = invested > 0 ? (pnl / invested) * 100 : 0
-    const anyLive = holdings.some((h) => prices[h.symbol] != null)
+    const anyLive = holdings.some((h) => prices[h.symbol.toUpperCase()] != null)
     return { invested, current, pnl, pnlPct, count: holdings.length, anyLive }
   }, [holdings, prices])
 
@@ -133,7 +128,7 @@ export default function Overview() {
           </LinkCard>
 
           {/* Chat + Screener */}
-          <LinkCard to="/dashboard/chat" title="AI chat" note="Grounded · Llama 3.3 70B">
+          <LinkCard to="/dashboard/chat" title="AI chat" note="Grounded · GPT-OSS 20B">
             <p className="text-xs text-neutral-500 mt-2 leading-relaxed">
               Ask "what's Nifty doing today?" or "how is my portfolio doing?" — Veridex fetches live data
               <em> before </em> the model replies, so answers cite real numbers, not memory.

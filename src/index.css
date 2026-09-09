@@ -6,8 +6,12 @@
 }
 
 html, body, #root { height: 100%; }
+/* Body styling lives here, not as utility classes on <body> — the
+   theme overrides below target .bg-neutral-950, which used to match
+   <body> itself and wipe out the themed background. */
 body {
   font-family: var(--font-sans);
+  background-color: #000000;
   color: #fafafa;
   color-scheme: dark;
   min-height: 100%;

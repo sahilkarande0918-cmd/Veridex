@@ -213,6 +213,15 @@ Deno.serve(async (req: Request) => {
   let conviction = cBase * W.base_rate + cEdge * W.edge + cFit * W.horizon_fit + cTrend * W.trend + cRR * W.risk_reward
   if (br.reliability === 'low') conviction *= 0.7   // thin sample → discount
 
+  // Guardrail. Risk:reward is only 15% of the blend, so on its own a
+  // terrible ratio barely dents the score — we saw a setup risking 7.7x
+  // what it stood to gain still score 84/100. A trade where the nearest
+  // resistance is closer than the nearest support is not "favourable"
+  // however good the base rate looks, so cap it.
+  const RR_FLOOR = 0.8
+  const rrCapped = rr > 0 && rr < RR_FLOOR
+  if (rrCapped) conviction = Math.min(conviction, 55)
+
   const call = conviction >= 60 ? 'FAVOURABLE' : conviction >= 42 ? 'NEUTRAL' : 'UNFAVOURABLE'
   const horizonWord = bestH === 'intraday' ? 'an intraday trade'
     : bestH === 'swing_delivery' ? 'a swing / delivery position' : 'a long-term hold'
@@ -234,6 +243,7 @@ Deno.serve(async (req: Request) => {
   reasons.push(`Trend: ${vsSma20 > 0 ? 'above' : 'below'} SMA20, ${vsSma50 > 0 ? 'above' : 'below'} SMA50, ${vsSma200 > 0 ? 'above' : 'below'} SMA200.`)
   reasons.push(`Risk:reward to the 20-session band is ${round(rr, 2)} : 1 (upside ${round(risk_upside(live, resistance), 2)}% vs downside ${round(risk_downside(live, support), 2)}%).`)
   if (br.reliability === 'low') reasons.push(`Sample is thin (n=${br.sample_size}) — conviction discounted 30%.`)
+  if (rrCapped) reasons.push(`Resistance sits closer than support (${round(rr, 2)} : 1) — you would be risking more than the move on offer, so conviction is capped at 55 regardless of the other components.`)
 
   const watch: string[] = []
   if (vsSma50 <= 0) watch.push(`A close back above SMA50 (₹${round(curSma50 ?? 0, 2)}) would flip the medium-term read.`)
@@ -304,6 +314,7 @@ Deno.serve(async (req: Request) => {
       sample_size: `Any horizon with fewer than ${MIN_SAMPLE} matches is flagged reliability:"low".`,
       edge: 'edge_vs_unconditional_pp compares the conditional rate against the stock\'s own all-days rate. Near zero means the current setup carries no historical signal.',
       horizon_scores: 'Intraday = range + participation + turnover. Swing = trend alignment + RSI zone + 1-month momentum. Long term = SMA200 + 1-year return + volatility + room in 52-week range.',
+      verdict: 'Arithmetic, not opinion: a fixed-weight blend of base rate (30%), edge (20%), horizon fit (20%), trend alignment (15%) and risk:reward (15%), each 0-100. Thin base-rate samples discount it 30%. A risk:reward below 0.8:1 caps conviction at 55, so a trade risking more than the move on offer never reads FAVOURABLE. FAVOURABLE >= 60, NEUTRAL >= 42, else UNFAVOURABLE.',
       not_advice: 'Descriptive statistics only. Past frequency is not probability of the future. Not SEBI-registered investment advice.',
     },
     generated_at: new Date().toISOString(),

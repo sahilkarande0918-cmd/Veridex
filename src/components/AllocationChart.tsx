@@ -1,7 +1,8 @@
+import { memo } from 'react'
 import Chart from 'react-apexcharts'
 import type { ApexOptions } from 'apexcharts'
 
-export default function AllocationChart({
+function AllocationChart({
   slices,
 }: {
   slices: { label: string; value: number }[]
@@ -47,3 +48,9 @@ export default function AllocationChart({
   const series = slices.map((s) => s.value)
   return <Chart options={options} series={series} type="donut" height={340} />
 }
+
+// ApexCharts rebuilds its whole SVG on every render, so only re-render
+// when the slice values actually change.
+export default memo(AllocationChart, (a, b) =>
+  a.slices.length === b.slices.length &&
+  a.slices.every((s, i) => s.label === b.slices[i].label && s.value === b.slices[i].value))

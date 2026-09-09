@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { listAlerts, markAllRead, type Alert } from '@/lib/alerts'
 import { requestFcmToken, onForegroundMessage } from '@/lib/firebase'
 import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/lib/auth'
+import { useAuth, fetchProfileRow, invalidateProfile } from '@/lib/auth'
 
 export default function AlertsBell() {
   const { user } = useAuth()
@@ -17,8 +17,8 @@ export default function AlertsBell() {
   useEffect(() => { load() }, [])
   useEffect(() => {
     if (!user) return
-    supabase.from('profiles').select('push_token').eq('id', user.id).maybeSingle<{ push_token: string | null }>()
-      .then(({ data }) => setPushOn(!!data?.push_token))
+    fetchProfileRow<{ push_token: string | null }>(user.id, 'push_token')
+      .then((d) => setPushOn(!!d?.push_token)).catch(() => {})
     return onForegroundMessage(() => load())
   }, [user])
 
@@ -29,6 +29,7 @@ export default function AlertsBell() {
       const token = await requestFcmToken()
       if (token) {
         await supabase.from('profiles').update({ push_token: token }).eq('id', user.id)
+        invalidateProfile(user.id)
         setPushOn(true)
       } else {
         alert('Notification permission was declined or unsupported in this browser.')
@@ -41,6 +42,7 @@ export default function AlertsBell() {
   const disablePush = async () => {
     if (!user) return
     await supabase.from('profiles').update({ push_token: null }).eq('id', user.id)
+    invalidateProfile(user.id)
     setPushOn(false)
   }
 

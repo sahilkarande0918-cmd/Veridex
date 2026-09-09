@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/lib/auth'
+import { useAuth, fetchProfileRow, invalidateProfile } from '@/lib/auth'
 
 type Profile = {
   capital_available: number | null
@@ -19,12 +19,9 @@ export default function Onboarding() {
 
   useEffect(() => {
     if (!user) return
-    supabase
-      .from('profiles')
-      .select('capital_available, risk_tolerance, goal_horizon, onboarded_at')
-      .eq('id', user.id)
-      .maybeSingle<Profile>()
-      .then(({ data }) => setNeeds(!data?.onboarded_at))
+    fetchProfileRow<Profile>(user.id, 'capital_available, risk_tolerance, goal_horizon, onboarded_at')
+      .then((d) => setNeeds(!d?.onboarded_at))
+      .catch(() => setNeeds(false))
   }, [user])
 
   if (!user || needs !== true) return null
@@ -37,6 +34,7 @@ export default function Onboarding() {
       goal_horizon: horizon,
       onboarded_at: new Date().toISOString(),
     }).eq('id', user.id)
+    invalidateProfile(user.id)
     setBusy(false)
     setNeeds(false)
   }
