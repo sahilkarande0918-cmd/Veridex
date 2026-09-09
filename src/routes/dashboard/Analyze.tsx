@@ -62,7 +62,7 @@ export default function Analyze() {
         </section>
       </div>
 
-      <Disclaimer ai />
+      <Disclaimer only="ai" />
     </div>
   )
 }

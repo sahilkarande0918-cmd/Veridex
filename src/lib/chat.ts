@@ -7,7 +7,10 @@ export type ChatMsg = { role: 'user' | 'assistant'; content: string }
 
 export type ChatResponse = {
   reply: string
-  grounded_on: { market: boolean; news: boolean; portfolio: boolean; screener: boolean }
+  resolved_symbol?: string | null
+  analysis?: unknown
+  screen?: unknown
+  grounded_on: Record<string, boolean>
   fetched_at: string
 }
 

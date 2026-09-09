@@ -152,7 +152,7 @@ export default function Signals() {
             </div>
           </section>
 
-          <Disclaimer ai />
+          <Disclaimer only="ai" />
         </div>
       </div>
     </div>

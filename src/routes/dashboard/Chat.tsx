@@ -1,8 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { sendChat, type ChatMsg, type ChatResponse } from '@/lib/chat'
 import Disclaimer from '@/components/Disclaimer'
+import ChatMarkdown from '@/components/ChatMarkdown'
+import ScreenPicks, { type ScreenResult } from '@/components/ScreenPicks'
 
-type Turn = ChatMsg & { grounded_on?: ChatResponse['grounded_on'] }
+type Turn = ChatMsg & {
+  grounded_on?: ChatResponse['grounded_on']
+  screen?: ScreenResult | null
+  verdict?: { call: string; conviction: number; recommended_horizon: string; suggested_stop: number } | null
+  symbol?: string | null
+}
 
 const SUGGESTIONS = [
   'What is Nifty doing today?',
@@ -30,22 +37,28 @@ export default function Chat() {
     setTurns((t) => [...t, { role: 'user', content: trimmed }])
     try {
       const r = await sendChat(trimmed, history)
-      setTurns((t) => [...t, { role: 'assistant', content: r.reply, grounded_on: r.grounded_on }])
+      const a = r.analysis as { verdict?: Turn['verdict'] } | null
+      setTurns((t) => [...t, {
+        role: 'assistant', content: r.reply, grounded_on: r.grounded_on,
+        screen: (r.screen as ScreenResult | null) ?? null,
+        verdict: a?.verdict ?? null,
+        symbol: r.resolved_symbol ?? null,
+      }])
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e))
     } finally { setBusy(false) }
   }
 
   return (
-    <div className="space-y-4 flex flex-col h-[calc(100vh-14rem)]">
+    <div className="space-y-3 flex flex-col h-[calc(100vh-11rem)] min-h-[26rem]">
       <div className="flex items-center gap-3">
         <h1 className="text-3xl font-semibold tracking-tight">AI Chat</h1>
         <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
           AI-generated · grounded on live data
         </span>
       </div>
-      <p className="text-sm text-neutral-500 -mt-2">
-        Each answer's specific numbers come from a live fetch made before the model replies. If a fact wasn't fetched, the model refuses instead of guessing.
+      <p className="text-xs text-neutral-500 -mt-1">
+        Numbers come from a live fetch made before the model replies — if it wasn't fetched, the model says so instead of guessing.
       </p>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto rounded-xl border border-neutral-900 bg-neutral-950 p-4 space-y-3">
@@ -93,7 +106,7 @@ export default function Chat() {
         </button>
       </form>
 
-      <Disclaimer ai />
+      <Disclaimer only="ai" />
     </div>
   )
 }
@@ -105,8 +118,35 @@ function Bubble({ turn }: { turn: Turn }) {
       <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
         isUser ? 'bg-violet-600 text-white' : 'bg-neutral-900 border border-neutral-800 text-neutral-100'
       }`}>
-        <div className="whitespace-pre-wrap leading-relaxed">{turn.content}</div>
+        {isUser
+          ? <div className="whitespace-pre-wrap leading-relaxed">{turn.content}</div>
+          : <ChatMarkdown text={turn.content} />}
+        {!isUser && turn.verdict && <VerdictChip v={turn.verdict} symbol={turn.symbol} />}
+        {!isUser && turn.screen && <ScreenPicks data={turn.screen} />}
         {!isUser && turn.grounded_on && <GroundingTags g={turn.grounded_on} />}
+      </div>
+    </div>
+  )
+}
+
+function VerdictChip({ v, symbol }: { v: NonNullable<Turn['verdict']>; symbol?: string | null }) {
+  const tone = v.call === 'FAVOURABLE'
+    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+    : v.call === 'NEUTRAL'
+    ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
+    : 'border-red-500/40 bg-red-500/10 text-red-300'
+  const horizon = { intraday: 'Intraday', swing_delivery: 'Swing / delivery', long_term: 'Long term' }[v.recommended_horizon] ?? v.recommended_horizon
+  return (
+    <div className={`mt-3 rounded-lg border px-3 py-2.5 ${tone}`}>
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-semibold">{symbol ? `${symbol} · ` : ''}{v.call}</span>
+        <span className="text-xs tabular opacity-80">{v.conviction}/100</span>
+      </div>
+      <div className="h-1 rounded-full bg-black/30 mt-2 overflow-hidden">
+        <div className="h-full rounded-full bg-current opacity-70" style={{ width: `${Math.min(100, Math.max(0, v.conviction))}%` }} />
+      </div>
+      <div className="text-[11px] mt-2 opacity-85">
+        Best horizon: {horizon} · suggested stop ₹{v.suggested_stop}
       </div>
     </div>
   )

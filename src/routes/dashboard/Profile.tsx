@@ -7,7 +7,6 @@ import { listHoldings, type Holding } from '@/lib/portfolio'
 import { fetchPrices } from '@/lib/quotes'
 import AnimatedNumber from '@/components/AnimatedNumber'
 import AllocationChart from '@/components/AllocationChart'
-import Disclaimer from '@/components/Disclaimer'
 
 type Profile = {
   email: string | null
@@ -188,7 +187,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <Disclaimer />
     </div>
   )
 }

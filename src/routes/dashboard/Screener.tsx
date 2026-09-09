@@ -3,7 +3,6 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import { score, medians, type Scored } from '@/lib/screener'
 import { SAMPLE_AS_OF, SAMPLE_SOURCE } from '@/data/fundamentals'
-import Disclaimer from '@/components/Disclaimer'
 
 type SortKey = 'composite' | 'value_score' | 'leverage_score' | 'growth_score' | 'symbol'
 
@@ -160,7 +159,6 @@ export default function Screener() {
         </table>
       </div>
 
-      <Disclaimer />
     </div>
   )
 }
