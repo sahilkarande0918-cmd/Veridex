@@ -14,12 +14,24 @@ import { corsHeaders } from '../_shared/cors.ts'
 
 const MODEL = 'openai/gpt-oss-20b'
 const STOPWORDS = new Set([
-  'SHOULD', 'I', 'BUY', 'SELL', 'THE', 'A', 'AN', 'IN', 'ON', 'FOR', 'IS', 'IT',
-  'THIS', 'THAT', 'AND', 'OR', 'TO', 'OF', 'MY', 'ME', 'DO', 'CAN', 'WHAT',
-  'WHICH', 'STOCK', 'STOCKS', 'SHARE', 'SHARES', 'PRICE', 'INTRADAY',
-  'DELIVERY', 'HOLD', 'LONG', 'TERM', 'SHORT', 'INVEST', 'GOOD', 'BAD',
-  'NOW', 'TODAY', 'RUPEES', 'RS', 'INR', 'UNDER', 'BELOW', 'ABOUT', 'ANY',
-  'NEWS', 'MARKET', 'PORTFOLIO', 'HOW', 'WHY', 'WHEN', 'BEST', 'TOP',
+  // pronouns / function words
+  'A','AN','THE','AND','OR','BUT','IF','AS','AT','BY','FOR','FROM','IN','INTO','OF','ON','TO','WITH',
+  'I','ME','MY','MINE','WE','US','OUR','YOU','YOUR','IT','ITS','THIS','THAT','THESE','THOSE','THERE',
+  'IS','AM','ARE','WAS','WERE','BE','BEEN','BEING','DO','DOES','DID','HAVE','HAS','HAD','WILL','WOULD',
+  'CAN','COULD','SHALL','SHOULD','MAY','MIGHT','MUST','NOT','NO','YES','OK','OKAY','PLEASE','THANKS',
+  // question words / time
+  'WHAT','WHICH','WHO','WHOM','WHOSE','WHEN','WHERE','WHY','HOW','NOW','TODAY','TOMORROW','YESTERDAY',
+  'CURRENT','CURRENTLY','RECENT','RECENTLY','LATEST','SOON','LATER','AGAIN','STILL','ALREADY','EVER',
+  // trading vocabulary that is never a ticker
+  'BUY','SELL','HOLD','SHORT','LONG','TERM','ENTRY','EXIT','TARGET','STOP','LOSS','PROFIT','GAIN',
+  'STOCK','STOCKS','SHARE','SHARES','EQUITY','PRICE','PRICES','MARKET','MARKETS','TRADE','TRADING',
+  'INTRADAY','DELIVERY','SWING','POSITION','POSITIONS','HOLDING','HOLDINGS','PORTFOLIO','INVEST',
+  'INVESTMENT','INVESTING','MONEY','CAPITAL','BUDGET','RUPEES','RUPEE','RS','INR','LAKH','CRORE',
+  'ZERO','NONE','ANY','SOME','ALL','MORE','LESS','UNDER','BELOW','ABOVE','OVER','BETWEEN','AROUND',
+  'GOOD','BAD','BEST','WORST','TOP','GREAT','SAFE','RISKY','CHEAP','COSTLY','HIGH','LOW',
+  'NEWS','HEADLINE','HEADLINES','UPDATE','UPDATES','ANALYSIS','ANALYSE','ANALYZE','REPORT',
+  'WANT','NEED','LIKE','THINK','TELL','GIVE','SHOW','PULL','FETCH','GET','GO','AHEAD','SURE',
+  'PURCHASE','BOOK','EXIT','ADD','REMOVE','CHECK','LOOK','FIND','SEARCH','ABOUT','ALSO','JUST','ONLY',
 ])
 
 type Msg = { role: 'system' | 'user' | 'assistant'; content: string }
@@ -34,7 +46,7 @@ Deno.serve(async (req: Request) => {
   const SR = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   if (!GROQ) return json({ error: 'GROQ_API_KEY unset' }, 500)
 
-  let payload: { message?: string; history?: Msg[] } = {}
+  let payload: { message?: string; history?: Msg[]; last_symbol?: string | null } = {}
   try { payload = await req.json() } catch { /* ignore */ }
   const message = (payload.message ?? '').trim()
   if (!message) return json({ error: 'missing "message"' }, 400)
@@ -48,7 +60,13 @@ Deno.serve(async (req: Request) => {
   const askPortfolio = /\bmy (portfolio|holdings|positions)\b|how am i doing|my p&?l|my pnl/.test(lower)
 
   // ---- resolve a ticker mentioned in the message --------------------
-  const resolved = await resolveSymbol(message, SUPABASE_URL, SR)
+  // Budget questions ("under 500") name no ticker — don't try to invent one.
+  let resolved = askRecommend ? null : await resolveSymbol(message, SUPABASE_URL, SR)
+  // A follow-up with no ticker of its own ("yes", "what about long term")
+  // inherits the subject the client last resolved.
+  if (!resolved && !askRecommend && payload.last_symbol) {
+    resolved = await resolveSymbol(payload.last_symbol, SUPABASE_URL, SR)
+  }
 
   // ---- gather grounding in parallel --------------------------------
   const maxPrice = parseBudget(lower)
@@ -88,9 +106,19 @@ Deno.serve(async (req: Request) => {
     '3. If base_rates.reliability is "low", say the sample is too thin to lean on.',
     '4. Point out when edge_vs_unconditional_pp is near zero — that means the setup carries no',
     '   historical signal and the honest answer is "no edge here".',
+    '5. If STOCK_ANALYSIS is present you DO have the data. Never claim otherwise.',
+    '6. THE VERDICT IS NOT YOURS TO OVERRIDE. verdict.call is computed arithmetically from the',
+    '   numbers. You must state exactly that call. If verdict.call is NEUTRAL or UNFAVOURABLE you',
+    '   may NOT write "buy", "good entry" or any equivalent — doing so contradicts the card shown',
+    '   directly beneath your text. NEUTRAL means "only if you accept the stated risk";',
+    '   UNFAVOURABLE means "wait". Quote verdict.conviction alongside it.',
+    '7. When verdict.risk_reward_capped is true, say plainly that the payoff is upside-down —',
+    '   resistance is nearer than support — and that this is why the call is not favourable.',
     '',
     'HOW TO ANSWER "SHOULD I BUY / INTRADAY OR DELIVERY"',
-    '- Open with a one-line read of the setup (trend vs SMA20/50/200, RSI, where it sits in the 52w range).',
+    '- Open by naming the company you analysed in full (e.g. "JINDALSAW (Jindal Saw Ltd)") so the',
+    '  user can correct you if they meant a different one — several groups share a name.',
+    '- Then a one-line read of the setup (trend vs SMA20/50/200, RSI, where it sits in the 52w range).',
     '- Give the base rates for 1d / 5d / 20d / 60d with sample sizes.',
     '- Recommend a horizon using horizon_fitness. Say WHY using its component numbers',
     '  (daily range % for intraday, trend alignment for swing, SMA200 + 1y return for long term).',
@@ -145,13 +173,17 @@ Deno.serve(async (req: Request) => {
   const gRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: { Authorization: `Bearer ${GROQ}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ model: MODEL, temperature: 0.2, max_tokens: 900, messages }),
+    // gpt-oss is a reasoning model: without a low effort setting and a
+    // generous ceiling it can spend the whole budget thinking and return
+    // an EMPTY content string.
+    body: JSON.stringify({ model: MODEL, temperature: 0.2, max_tokens: 2000, reasoning_effort: 'low', messages }),
   })
   const gBody = await gRes.json()
   if (!gRes.ok) return json({ error: 'groq error', detail: gBody }, 502)
 
+  const replyText = (gBody?.choices?.[0]?.message?.content ?? '').trim()
   return json({
-    reply: gBody?.choices?.[0]?.message?.content ?? '',
+    reply: replyText || 'I pulled the data but could not compose a summary. The analysis card below still has the full read.',
     resolved_symbol: resolved?.trading_symbol ?? null,
     grounded_on: {
       analysis: !!analysis && !(analysis as { error?: unknown }).error,
@@ -180,14 +212,13 @@ async function callFn(base: string, sr: string, path: string) {
 }
 
 // Find a real NSE ticker mentioned anywhere in the message.
-async function resolveSymbol(msg: string, base: string, sr: string):
-  Promise<{ instrument_key: string; trading_symbol: string; name: string } | null> {
+async function resolveSymbol(msg: string, base: string, sr: string): Promise<{ instrument_key: string; trading_symbol: string; name: string } | null> {
   const tokens = Array.from(new Set(
-    (msg.toUpperCase().match(/[A-Z][A-Z0-9&-]{1,14}/g) ?? []).filter((t) => !STOPWORDS.has(t)),
-  )).slice(0, 12)
+    (msg.toUpperCase().match(/[A-Z][A-Z0-9&.-]{1,14}/g) ?? []).filter((t) => !STOPWORDS.has(t) && t.length >= 3),
+  ))
   if (tokens.length === 0) return null
 
-  // exact ticker match first
+  // 1) exact ticker hit on any token
   const inList = tokens.map((t) => `"${t}"`).join(',')
   const r = await fetch(
     `${base}/rest/v1/instruments?select=instrument_key,trading_symbol,name&trading_symbol=in.(${encodeURIComponent(inList)})&limit=1`,
@@ -198,21 +229,25 @@ async function resolveSymbol(msg: string, base: string, sr: string):
     if (hit.length) return hit[0]
   }
 
-  // fall back to a name search on the longest meaningful token
-  const longest = tokens.sort((a, b) => b.length - a.length)[0]
-  if (!longest || longest.length < 4) return null
-  const r2 = await fetch(
-    `${base}/rest/v1/rpc/search_instruments`,
-    {
+  // 2) name search on EVERY candidate token, longest first.
+  //    The old code only tried the single longest token, so in
+  //    "should i buy jindal stock ... currently", CURRENTLY (9) beat
+  //    JINDAL (6) and the lookup silently returned nothing.
+  const ordered = [...tokens].sort((a, b) => b.length - a.length)
+  for (const tok of ordered.slice(0, 6)) {
+    if (tok.length < 4) continue
+    const res = await fetch(`${base}/rest/v1/rpc/search_instruments`, {
       method: 'POST',
       headers: { apikey: sr, Authorization: `Bearer ${sr}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ q: longest, lim: 1 }),
-    },
-  )
-  if (!r2.ok) return null
-  const hit2 = await r2.json()
-  return hit2?.length ? hit2[0] : null
+      body: JSON.stringify({ q: tok, lim: 1 }),
+    })
+    if (!res.ok) continue
+    const hits = await res.json()
+    if (hits?.length) return hits[0]
+  }
+  return null
 }
+
 
 // "under 500", "below ₹250", "budget of 1000"
 function parseBudget(lower: string): number | null {

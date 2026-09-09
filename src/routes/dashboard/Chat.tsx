@@ -36,7 +36,8 @@ export default function Chat() {
     const history: ChatMsg[] = turns.map(({ role, content }) => ({ role, content }))
     setTurns((t) => [...t, { role: 'user', content: trimmed }])
     try {
-      const r = await sendChat(trimmed, history)
+      const lastSymbol = [...turns].reverse().find((t) => t.symbol)?.symbol ?? null
+      const r = await sendChat(trimmed, history, lastSymbol)
       const a = r.analysis as { verdict?: Turn['verdict'] } | null
       setTurns((t) => [...t, {
         role: 'assistant', content: r.reply, grounded_on: r.grounded_on,

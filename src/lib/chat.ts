@@ -14,7 +14,7 @@ export type ChatResponse = {
   fetched_at: string
 }
 
-export async function sendChat(message: string, history: ChatMsg[]): Promise<ChatResponse> {
+export async function sendChat(message: string, history: ChatMsg[], lastSymbol?: string | null): Promise<ChatResponse> {
   const url = `${SUPABASE_URL}/functions/v1/chat`
   const { data: { session } } = await supabase.auth.getSession()
   const res = await fetch(url, {
@@ -24,7 +24,7 @@ export async function sendChat(message: string, history: ChatMsg[]): Promise<Cha
       Authorization: `Bearer ${session?.access_token ?? ANON}`,
       'content-type': 'application/json',
     },
-    body: JSON.stringify({ message, history }),
+    body: JSON.stringify({ message, history, last_symbol: lastSymbol ?? null }),
   })
   if (!res.ok) throw new Error(`chat failed: ${res.status} ${await res.text()}`)
   return res.json()
