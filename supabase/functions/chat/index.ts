@@ -1,47 +1,26 @@
-// Grounded AI chat.
+// Grounded AI chat with a professional-trader persona.
 //
-// POST { message: string, history?: [{role,content}] }
+// POST { message, history? }
 //
-// Pipeline:
-//   1. Intent-route the user's message (keyword rules; no LLM router).
-//   2. Fire the live fetches that intent needs — market snapshot,
-//      news search, screener top-3, portfolio read — BEFORE calling
-//      the model.
-//   3. Prompt Groq with a strict system message: answer only from
-//      the supplied context; say "I don't have that" for anything
-//      not present. Never originate a market number.
+// The model never answers from memory. We route the message, run the
+// relevant live fetches, and hand the results over as a CONTEXT block.
+// Probabilities always come from analyze-stock's historical base rates
+// (with sample size), never from the model.
 //
-// Env: UPSTOX_ACCESS_TOKEN, NEWSAPI_KEY, GROQ_API_KEY
+// Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY,
+//      UPSTOX_ACCESS_TOKEN, NEWSAPI_KEY, GROQ_API_KEY
 
 import { corsHeaders } from '../_shared/cors.ts'
 
-declare const Deno: { env: { get: (k: string) => string | undefined }; serve: (h: (r: Request) => Response | Promise<Response>) => void }
-
-const NIFTY_KEY = 'NSE_INDEX|Nifty 50'
-
-// Same curated set as the frontend so movers make sense.
-const UNIVERSE: { symbol: string; key: string }[] = [
-  { symbol: 'RELIANCE',   key: 'NSE_EQ|INE002A01018' },
-  { symbol: 'TCS',        key: 'NSE_EQ|INE467B01029' },
-  { symbol: 'HDFCBANK',   key: 'NSE_EQ|INE040A01034' },
-  { symbol: 'INFY',       key: 'NSE_EQ|INE009A01021' },
-  { symbol: 'ICICIBANK',  key: 'NSE_EQ|INE090A01021' },
-  { symbol: 'HINDUNILVR', key: 'NSE_EQ|INE030A01027' },
-  { symbol: 'ITC',        key: 'NSE_EQ|INE154A01025' },
-  { symbol: 'SBIN',       key: 'NSE_EQ|INE062A01020' },
-  { symbol: 'BHARTIARTL', key: 'NSE_EQ|INE397D01024' },
-  { symbol: 'KOTAKBANK',  key: 'NSE_EQ|INE237A01028' },
-  { symbol: 'LT',         key: 'NSE_EQ|INE018A01030' },
-  { symbol: 'AXISBANK',   key: 'NSE_EQ|INE238A01034' },
-  { symbol: 'MARUTI',     key: 'NSE_EQ|INE585B01010' },
-  { symbol: 'BAJFINANCE', key: 'NSE_EQ|INE296A01024' },
-  { symbol: 'SUNPHARMA',  key: 'NSE_EQ|INE044A01036' },
-  { symbol: 'TATAMOTORS', key: 'NSE_EQ|INE155A01022' },
-  { symbol: 'TATASTEEL',  key: 'NSE_EQ|INE081A01020' },
-  { symbol: 'ONGC',       key: 'NSE_EQ|INE213A01029' },
-  { symbol: 'ADANIENT',   key: 'NSE_EQ|INE423A01024' },
-  { symbol: 'COALINDIA',  key: 'NSE_EQ|INE522F01014' },
-]
+const MODEL = 'openai/gpt-oss-20b'
+const STOPWORDS = new Set([
+  'SHOULD', 'I', 'BUY', 'SELL', 'THE', 'A', 'AN', 'IN', 'ON', 'FOR', 'IS', 'IT',
+  'THIS', 'THAT', 'AND', 'OR', 'TO', 'OF', 'MY', 'ME', 'DO', 'CAN', 'WHAT',
+  'WHICH', 'STOCK', 'STOCKS', 'SHARE', 'SHARES', 'PRICE', 'INTRADAY',
+  'DELIVERY', 'HOLD', 'LONG', 'TERM', 'SHORT', 'INVEST', 'GOOD', 'BAD',
+  'NOW', 'TODAY', 'RUPEES', 'RS', 'INR', 'UNDER', 'BELOW', 'ABOUT', 'ANY',
+  'NEWS', 'MARKET', 'PORTFOLIO', 'HOW', 'WHY', 'WHEN', 'BEST', 'TOP',
+])
 
 type Msg = { role: 'system' | 'user' | 'assistant'; content: string }
 
@@ -51,78 +30,112 @@ Deno.serve(async (req: Request) => {
   const GROQ = Deno.env.get('GROQ_API_KEY')
   const UPSTOX = Deno.env.get('UPSTOX_ACCESS_TOKEN')
   const NEWSAPI = Deno.env.get('NEWSAPI_KEY')
-  if (!GROQ)   return json({ error: 'GROQ_API_KEY unset' }, 500)
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+  const SR = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  if (!GROQ) return json({ error: 'GROQ_API_KEY unset' }, 500)
 
   let payload: { message?: string; history?: Msg[] } = {}
   try { payload = await req.json() } catch { /* ignore */ }
   const message = (payload.message ?? '').trim()
   if (!message) return json({ error: 'missing "message"' }, 400)
-
-  // Intent routing (keyword rules).
   const lower = message.toLowerCase()
-  const askMarket   = /\b(nifty|sensex|market|trend|today|movers?|top gainers?|top losers?)\b/.test(lower)
-  const askNews     = /\bnews|headlines?|announcement/.test(lower)
-  const askPortfolio= /\bmy (portfolio|holdings|positions)\b|how am i doing|my pnl|profit/.test(lower)
-  const askRecomm   = /\b(what should i buy|screener|pick|recommend|best stock)/.test(lower)
-  const symMatch    = lower.match(/\b([a-z]{3,10})\b/g)?.filter((w) =>
-    UNIVERSE.some((u) => u.symbol.toLowerCase() === w),
-  ) ?? []
 
-  // ---- collect grounding context in parallel ----
-  const [marketCtx, newsCtx, portfolioCtx] = await Promise.all([
-    askMarket && UPSTOX ? marketSnapshot(UPSTOX).catch(err) : Promise.resolve(null),
-    askNews && NEWSAPI ? newsSearch(NEWSAPI, symMatch[0] ?? extractQuery(message)).catch(err) : Promise.resolve(null),
-    askPortfolio ? portfolioSnapshot(req).catch(err) : Promise.resolve(null),
+  // ---- intent ------------------------------------------------------
+  const askAnalysis = /\b(should i (buy|sell|invest|hold|enter)|analys|analyz|worth (buying|holding)|good (to )?buy|intraday or|delivery or|entry|stop ?loss|target|hold (it )?(for )?(long|short))\b/.test(lower)
+  const askRecommend = /\b(what should i buy|recommend|suggest|which stocks?|best stocks?|top stocks?|under\s*(₹|rs\.?|inr)?\s*\d|below\s*(₹|rs\.?|inr)?\s*\d|budget)\b/.test(lower)
+  const askMarket = /\b(nifty|sensex|market|trend|movers?|gainers?|losers?)\b/.test(lower)
+  const askNews = /\b(news|headlines?|announcement)\b/.test(lower)
+  const askPortfolio = /\bmy (portfolio|holdings|positions)\b|how am i doing|my p&?l|my pnl/.test(lower)
+
+  // ---- resolve a ticker mentioned in the message --------------------
+  const resolved = await resolveSymbol(message, SUPABASE_URL, SR)
+
+  // ---- gather grounding in parallel --------------------------------
+  const maxPrice = parseBudget(lower)
+
+  const [analysis, recommendation, market, news, portfolio] = await Promise.all([
+    (askAnalysis || (resolved && !askRecommend && !askNews)) && resolved
+      ? callFn(SUPABASE_URL, SR, `analyze-stock?key=${encodeURIComponent(resolved.instrument_key)}`).catch(errOf)
+      : Promise.resolve(null),
+    askRecommend
+      ? callFn(SUPABASE_URL, SR, `recommend?max_price=${maxPrice ?? 500}&count=5`).catch(errOf)
+      : Promise.resolve(null),
+    askMarket && UPSTOX ? marketSnapshot(UPSTOX).catch(errOf) : Promise.resolve(null),
+    askNews && NEWSAPI ? newsSearch(NEWSAPI, resolved?.trading_symbol ?? extractQuery(message)).catch(errOf) : Promise.resolve(null),
+    askPortfolio ? portfolioSnapshot(req, SUPABASE_URL).catch(errOf) : Promise.resolve(null),
   ])
 
-  const screenerCtx = askRecomm ? screenerTop3() : null
-
-  // Assemble context block for the LLM.
-  const context = renderContext({ marketCtx, newsCtx, portfolioCtx, screenerCtx })
+  const parts: string[] = []
+  if (analysis)       parts.push('STOCK_ANALYSIS:\n' + JSON.stringify(analysis, null, 1))
+  if (recommendation) parts.push('SCREEN_RESULTS:\n' + JSON.stringify(recommendation, null, 1))
+  if (market)         parts.push('MARKET:\n' + JSON.stringify(market, null, 1))
+  if (news)           parts.push('NEWS:\n' + JSON.stringify(news, null, 1))
+  if (portfolio)      parts.push('PORTFOLIO:\n' + JSON.stringify(portfolio, null, 1))
+  const context = parts.join('\n\n')
 
   const system = [
-    'You are Veridex, an assistant for Indian retail investors. Follow these rules strictly:',
+    'You are Veridex Desk — an experienced Indian equity trading assistant. You speak like a',
+    'professional on a trading desk: direct, risk-first, unhyped. You never cheerlead a stock.',
     '',
-    '1. Every specific number (price, %, ratio, count, date) MUST come from the CONTEXT block below.',
-    '   If a number is not in the context, say "I don\'t have that right now — I can pull it if you\'d like."',
-    '   NEVER estimate, recall, or invent a market number from your training data.',
-    '2. When the user asks for a buy/sell recommendation, do not originate one. Point them to Veridex\'s',
-    '   own screener or signals output as shown in the context, and remind them methodology is visible in those pages.',
-    '3. Keep answers under 6 sentences unless the user asks for detail.',
-    '4. End every substantive answer with: "Not SEBI-registered advice."',
+    'ABSOLUTE RULES',
+    '1. Every number you state (price, %, RSI, probability, level, sample size) MUST be copied from',
+    '   the CONTEXT block below. If a number is not there, say "I don\'t have that — want me to pull it?"',
+    '   NEVER estimate or recall a market number from training data.',
+    '2. NEVER say a stock "will" go up or down. Express direction ONLY as the historical base rate',
+    '   from base_rates, and ALWAYS quote the sample size alongside it. Example phrasing:',
+    '   "In the 103 past sessions where this stock sat in the same RSI/SMA50 state, price was higher',
+    '   20 sessions later 29% of the time." Then state what that does and does not imply.',
+    '3. If base_rates.reliability is "low", say the sample is too thin to lean on.',
+    '4. Point out when edge_vs_unconditional_pp is near zero — that means the setup carries no',
+    '   historical signal and the honest answer is "no edge here".',
     '',
-    '=== CONTEXT (only ground truth you may cite) ===',
-    context || '(no live context fetched for this question)',
+    'HOW TO ANSWER "SHOULD I BUY / INTRADAY OR DELIVERY"',
+    '- Open with a one-line read of the setup (trend vs SMA20/50/200, RSI, where it sits in the 52w range).',
+    '- Give the base rates for 1d / 5d / 20d / 60d with sample sizes.',
+    '- Recommend a horizon using horizon_fitness. Say WHY using its component numbers',
+    '  (daily range % for intraday, trend alignment for swing, SMA200 + 1y return for long term).',
+    '- Give the risk frame: ATR stop levels, 20-session support and resistance, and the',
+    '  upside-to-resistance vs downside-to-support ratio.',
+    '- If the setup is poor, say so plainly. "Not a good entry here" is a valid, useful answer.',
+    '',
+    'HOW TO ANSWER "WHAT SHOULD I BUY UNDER X"',
+    '- Use SCREEN_RESULTS. Name the top picks with their composite score and the raw numbers behind it.',
+    '- State the screen\'s methodology limits: it is price-momentum based, uses no fundamentals,',
+    '  and only ranks within the liquid shortlist it analysed.',
+    '',
+    'STYLE',
+    '- Under 200 words unless asked for depth. Use short paragraphs or tight bullets.',
+    '- Rupee amounts as ₹1,284.40. Percentages to one decimal.',
+    '- End every substantive answer with: "Not SEBI-registered advice."',
+    '',
+    '=== CONTEXT (the only ground truth you may cite) ===',
+    context || '(no live data was fetched for this question)',
     '=== END CONTEXT ===',
   ].join('\n')
 
   const messages: Msg[] = [
     { role: 'system', content: system },
-    ...(payload.history ?? []).slice(-8),   // last 8 turns of history
+    ...(payload.history ?? []).slice(-6),
     { role: 'user', content: message },
   ]
 
   const gRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: { Authorization: `Bearer ${GROQ}`, 'content-type': 'application/json' },
-    body: JSON.stringify({
-      model: 'openai/gpt-oss-20b',
-      temperature: 0.2,
-      messages,
-    }),
+    body: JSON.stringify({ model: MODEL, temperature: 0.2, max_tokens: 900, messages }),
   })
   const gBody = await gRes.json()
   if (!gRes.ok) return json({ error: 'groq error', detail: gBody }, 502)
 
-  const reply = gBody?.choices?.[0]?.message?.content ?? ''
   return json({
-    reply,
+    reply: gBody?.choices?.[0]?.message?.content ?? '',
+    resolved_symbol: resolved?.trading_symbol ?? null,
     grounded_on: {
-      market: !!marketCtx,
-      news: !!newsCtx,
-      portfolio: !!portfolioCtx,
-      screener: !!screenerCtx,
+      analysis: !!analysis && !(analysis as { error?: unknown }).error,
+      screen: !!recommendation && !(recommendation as { error?: unknown }).error,
+      market: !!market, news: !!news, portfolio: !!portfolio,
     },
+    analysis: analysis ?? null,
     fetched_at: new Date().toISOString(),
   })
 })
@@ -131,96 +144,105 @@ Deno.serve(async (req: Request) => {
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'content-type': 'application/json' } })
 }
-function err(e: unknown) { return { error: e instanceof Error ? e.message : String(e) } }
+const errOf = (e: unknown) => ({ error: e instanceof Error ? e.message : String(e) })
+
+// Call a sibling edge function server-to-server with the service role.
+async function callFn(base: string, sr: string, path: string) {
+  const r = await fetch(`${base}/functions/v1/${path}`, {
+    headers: { apikey: sr, Authorization: `Bearer ${sr}` },
+  })
+  if (!r.ok) throw new Error(`${path} → ${r.status}`)
+  return r.json()
+}
+
+// Find a real NSE ticker mentioned anywhere in the message.
+async function resolveSymbol(msg: string, base: string, sr: string):
+  Promise<{ instrument_key: string; trading_symbol: string; name: string } | null> {
+  const tokens = Array.from(new Set(
+    (msg.toUpperCase().match(/[A-Z][A-Z0-9&-]{1,14}/g) ?? []).filter((t) => !STOPWORDS.has(t)),
+  )).slice(0, 12)
+  if (tokens.length === 0) return null
+
+  // exact ticker match first
+  const inList = tokens.map((t) => `"${t}"`).join(',')
+  const r = await fetch(
+    `${base}/rest/v1/instruments?select=instrument_key,trading_symbol,name&trading_symbol=in.(${encodeURIComponent(inList)})&limit=1`,
+    { headers: { apikey: sr, Authorization: `Bearer ${sr}` } },
+  )
+  if (r.ok) {
+    const hit = await r.json()
+    if (hit.length) return hit[0]
+  }
+
+  // fall back to a name search on the longest meaningful token
+  const longest = tokens.sort((a, b) => b.length - a.length)[0]
+  if (!longest || longest.length < 4) return null
+  const r2 = await fetch(
+    `${base}/rest/v1/rpc/search_instruments`,
+    {
+      method: 'POST',
+      headers: { apikey: sr, Authorization: `Bearer ${sr}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ q: longest, lim: 1 }),
+    },
+  )
+  if (!r2.ok) return null
+  const hit2 = await r2.json()
+  return hit2?.length ? hit2[0] : null
+}
+
+// "under 500", "below ₹250", "budget of 1000"
+function parseBudget(lower: string): number | null {
+  const m = lower.match(/(?:under|below|less than|upto|up to|within|budget(?: of)?)\s*(?:₹|rs\.?|inr)?\s*([\d,]+)/)
+  if (!m) return null
+  const n = Number(m[1].replace(/,/g, ''))
+  return Number.isFinite(n) && n > 0 ? n : null
+}
 
 function extractQuery(m: string): string {
-  // pull a plausible company name / ticker from the message.
   const m2 = m.match(/\b([A-Z][A-Za-z]{2,})\b/)
   return m2?.[1] ?? m.split(/\s+/).slice(-1)[0]
 }
 
 async function marketSnapshot(token: string) {
-  const keys = [NIFTY_KEY, ...UNIVERSE.map((u) => u.key)].join(',')
+  const NIFTY = 'NSE_INDEX|Nifty 50'
   const res = await fetch(
-    `https://api.upstox.com/v2/market-quote/quotes?instrument_key=${encodeURIComponent(keys)}`,
+    `https://api.upstox.com/v2/market-quote/quotes?instrument_key=${encodeURIComponent(NIFTY)}`,
     { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } },
   )
+  if (!res.ok) throw new Error(`upstox ${res.status}`)
   const body = await res.json()
-  if (!res.ok) throw new Error('upstox quote failed: ' + JSON.stringify(body).slice(0, 200))
-
-  type Quote = { last_price?: number; net_change?: number; close_price?: number }
-  const data: Record<string, Quote> = body.data ?? {}
-  const universeQuotes = UNIVERSE.map((u) => {
-    // Upstox keys quotes by `EXCH:SYMBOL`, not the instrument_key we sent.
-    const entry = Object.entries(data).find(([, q]) =>
-      (q as Quote & { instrument_token?: string })?.instrument_token != null,
-    )?.[1] // fallback if lookup fails
-    const q = data[`NSE_EQ:${u.symbol}`] ?? entry ?? {}
-    const last  = q.last_price ?? 0
-    const prev  = q.close_price ?? (last - (q.net_change ?? 0))
-    const pct   = prev > 0 ? ((last - prev) / prev) * 100 : 0
-    return { symbol: u.symbol, last, pct }
-  })
-  const gainers = [...universeQuotes].sort((a, b) => b.pct - a.pct).slice(0, 5)
-  const losers  = [...universeQuotes].sort((a, b) => a.pct - b.pct).slice(0, 5)
-
-  const nifty = data['NSE_INDEX:Nifty 50'] ?? data[NIFTY_KEY] ?? {}
-  const niftyLast = nifty.last_price ?? null
-  const niftyPrev = nifty.close_price ?? (niftyLast != null && nifty.net_change != null ? niftyLast - nifty.net_change : null)
-  const niftyPct  = niftyLast != null && niftyPrev ? ((niftyLast - niftyPrev) / niftyPrev) * 100 : null
-
-  return { nifty: { last: niftyLast, pct: niftyPct }, gainers, losers }
+  const q = Object.values(body?.data ?? {})[0] as
+    { last_price?: number; net_change?: number; ohlc?: { close?: number } } | undefined
+  const last = q?.last_price ?? null
+  const prev = q?.ohlc?.close ?? (last != null && q?.net_change != null ? last - q.net_change : null)
+  const pct = last != null && prev ? ((last - prev) / prev) * 100 : null
+  return { index: 'Nifty 50', last, pct_change: pct != null ? Math.round(pct * 100) / 100 : null }
 }
 
 async function newsSearch(apiKey: string, q: string) {
   const url = `https://newsdata.io/api/1/latest?apikey=${apiKey}&q=${encodeURIComponent(q)}&country=in&language=en&category=business`
   const res = await fetch(url)
   const body = await res.json()
-  type Raw = { title: string; link: string; source_name?: string; source_id?: string; pubDate?: string }
-  if (!res.ok) throw new Error('newsdata: ' + JSON.stringify(body).slice(0, 200))
-  const items = (body.results ?? []).slice(0, 6).map((r: Raw) => ({
-    title: r.title,
-    source: r.source_name ?? r.source_id ?? 'unknown',
-    published_at: r.pubDate ? new Date(r.pubDate).toISOString() : null,
-  }))
-  return { q, items }
+  if (!res.ok) throw new Error('newsdata: ' + JSON.stringify(body).slice(0, 160))
+  type Raw = { title: string; source_name?: string; source_id?: string; pubDate?: string }
+  return {
+    q,
+    items: (body.results ?? []).slice(0, 6).map((r: Raw) => ({
+      title: r.title,
+      source: r.source_name ?? r.source_id ?? 'unknown',
+      published_at: r.pubDate ? new Date(r.pubDate).toISOString() : null,
+    })),
+  }
 }
 
-async function portfolioSnapshot(req: Request) {
+async function portfolioSnapshot(req: Request, base: string) {
   const auth = req.headers.get('authorization') ?? ''
-  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
   const ANON = Deno.env.get('SUPABASE_ANON_KEY')
-  if (!SUPABASE_URL || !ANON) return null
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/holdings?select=symbol,qty,buy_price,buy_date`, {
+  if (!ANON) return null
+  const res = await fetch(`${base}/rest/v1/holdings?select=symbol,qty,buy_price,buy_date`, {
     headers: { apikey: ANON, Authorization: auth },
   })
   if (!res.ok) throw new Error('holdings read failed: ' + res.status)
   const rows: { symbol: string; qty: number; buy_price: number; buy_date: string }[] = await res.json()
   return { count: rows.length, holdings: rows.slice(0, 30) }
-}
-
-// Small hardcoded top-3 from the same illustrative fundamentals shipped
-// with the frontend — the chat isn't the source of truth for the screener
-// (that page is), just a pointer. When live fundamentals wire in, this
-// gets replaced with a call into the same source the screener uses.
-function screenerTop3() {
-  return {
-    note: 'Top-3 by composite score using SAMPLE fundamentals (see Screener page for methodology).',
-    picks: [
-      { symbol: 'ONGC',       composite: 81, why: 'Cheapest P/E in set + low D/E' },
-      { symbol: 'SBIN',       composite: 76, why: 'Strong growth, low P/B' },
-      { symbol: 'COALINDIA',  composite: 74, why: 'Cheap P/E + debt-light' },
-    ],
-  }
-}
-
-function renderContext(bag: {
-  marketCtx: unknown; newsCtx: unknown; portfolioCtx: unknown; screenerCtx: unknown
-}): string {
-  const parts: string[] = []
-  if (bag.marketCtx) parts.push('MARKET:\n' + JSON.stringify(bag.marketCtx, null, 2))
-  if (bag.newsCtx)   parts.push('NEWS:\n'   + JSON.stringify(bag.newsCtx, null, 2))
-  if (bag.portfolioCtx) parts.push('PORTFOLIO:\n' + JSON.stringify(bag.portfolioCtx, null, 2))
-  if (bag.screenerCtx)  parts.push('SCREENER:\n'  + JSON.stringify(bag.screenerCtx, null, 2))
-  return parts.join('\n\n')
 }

@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { listHoldings, type Holding } from '@/lib/portfolio'
 import { fetchQuote } from '@/lib/upstox'
-import { bySymbol, INSTRUMENTS } from '@/lib/instruments'
+import { resolveSymbols } from '@/lib/instruments'
 import { useCountUp } from '@/lib/useCountUp'
 import AllocationChart from '@/components/AllocationChart'
 import Disclaimer from '@/components/Disclaimer'
@@ -40,17 +40,22 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (holdings.length === 0) return
+    let alive = true
     const syms = Array.from(new Set(holdings.map((h) => h.symbol)))
-    const tick = () => syms.forEach((sym) => {
-      const inst = bySymbol(sym)
-      if (!inst) return
-      fetchQuote(inst.key)
-        .then((r) => r.price != null && setPrices((p) => ({ ...p, [sym]: r.price! })))
-        .catch(() => {})
-    })
+    const tick = async () => {
+      const map = await resolveSymbols(syms)
+      if (!alive) return
+      syms.forEach((sym) => {
+        const inst = map.get(sym.toUpperCase())
+        if (!inst) return
+        fetchQuote(inst.key)
+          .then((r) => alive && r.price != null && setPrices((p) => ({ ...p, [sym]: r.price! })))
+          .catch(() => {})
+      })
+    }
     tick()
     const id = window.setInterval(tick, 20_000)
-    return () => window.clearInterval(id)
+    return () => { alive = false; window.clearInterval(id) }
   }, [holdings])
 
   const rows = useMemo(() => holdings.map((h) => {
@@ -74,13 +79,14 @@ export default function ProfilePage() {
   const netWorth = totals.current + cash
   const netWorthAnim = useCountUp(netWorth, 900)
 
+  // Per-stock allocation. Sector data isn't in the NSE master, so we
+  // show the split we can compute exactly rather than a guessed one.
   const sectorSlices = useMemo(() => {
     const map: Record<string, number> = {}
-    rows.forEach((r) => {
-      const sect = INSTRUMENTS.find((i) => i.symbol === r.h.symbol)?.sector ?? 'Other'
-      map[sect] = (map[sect] ?? 0) + r.current
-    })
-    return Object.entries(map).map(([label, value]) => ({ label, value }))
+    rows.forEach((r) => { map[r.h.symbol] = (map[r.h.symbol] ?? 0) + r.current })
+    return Object.entries(map)
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value)
   }, [rows])
 
   const topHoldings = useMemo(() => [...rows].sort((a, b) => b.current - a.current).slice(0, 5), [rows])
@@ -149,7 +155,7 @@ export default function ProfilePage() {
                   <tr key={r.h.id} className="border-t border-neutral-900">
                     <td className="py-2">
                       <div className="font-medium">{r.h.symbol}</div>
-                      <div className="text-[10px] text-neutral-500">{INSTRUMENTS.find((i) => i.symbol === r.h.symbol)?.sector ?? '—'}</div>
+                      <div className="text-[10px] text-neutral-500">{r.h.exchange ?? 'NSE'}</div>
                     </td>
                     <td className="text-right tabular py-2">{r.h.qty}</td>
                     <td className="text-right tabular py-2">{r.ltp != null ? r.ltp.toFixed(2) : '—'}</td>
@@ -165,9 +171,9 @@ export default function ProfilePage() {
         </div>
 
         <div className="rounded-xl border border-neutral-900 bg-neutral-950 p-4">
-          <div className="text-sm font-medium mb-2">Sector allocation</div>
+          <div className="text-sm font-medium mb-2">Allocation by stock</div>
           {sectorSlices.length === 0 ? (
-            <div className="text-xs text-neutral-500 py-8 text-center">Add positions to see sector split.</div>
+            <div className="text-xs text-neutral-500 py-8 text-center">Add positions to see the split.</div>
           ) : (
             <AllocationChart slices={sectorSlices} />
           )}

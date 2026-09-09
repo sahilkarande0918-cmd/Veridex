@@ -12,6 +12,7 @@ const DashboardShell = lazy(() => import('@/components/DashboardShell'))
 const Overview  = lazy(() => import('@/routes/dashboard/Overview'))
 const Profile   = lazy(() => import('@/routes/dashboard/Profile'))
 const Charts    = lazy(() => import('@/routes/dashboard/Charts'))
+const Analyze   = lazy(() => import('@/routes/dashboard/Analyze'))
 const Portfolio = lazy(() => import('@/routes/dashboard/Portfolio'))
 const Screener  = lazy(() => import('@/routes/dashboard/Screener'))
 const News      = lazy(() => import('@/routes/dashboard/News'))
@@ -34,6 +35,7 @@ export default function App() {
               <Route index element={<Overview />} />
               <Route path="profile"   element={<Profile />} />
               <Route path="charts"    element={<Charts />} />
+              <Route path="analyze"   element={<Analyze />} />
               <Route path="portfolio" element={<Portfolio />} />
               <Route path="screener"  element={<Screener />} />
               <Route path="signals"   element={<Signals />} />

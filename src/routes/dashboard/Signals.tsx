@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
-import { INSTRUMENTS, type Instrument } from '@/lib/instruments'
+import { useEffect, useState } from 'react'
+import { defaultInstruments, type Instrument } from '@/lib/instruments'
 import { fetchCandles, type Candle } from '@/lib/upstox'
 import { analyze, type AnomalyReport } from '@/lib/anomaly'
 import { fetchSentiment, type SentimentReport } from '@/lib/sentiment'
 import { relTime } from '@/lib/news'
 import Disclaimer from '@/components/Disclaimer'
+import SymbolSearch from '@/components/SymbolSearch'
 
 export default function Signals() {
-  const [pick, setPick] = useState<Instrument>(INSTRUMENTS[0])
-  const [q, setQ] = useState('')
+  const [pick, setPick] = useState<Instrument | null>(null)
   const [candles, setCandles] = useState<Candle[]>([])
   const [anomaly, setAnomaly] = useState<AnomalyReport | null>(null)
   const [sentiment, setSentiment] = useState<SentimentReport | null>(null)
@@ -16,18 +16,15 @@ export default function Signals() {
   const [errS, setErrS] = useState<string | null>(null)
   const [busyS, setBusyS] = useState(false)
 
-  const results = useMemo(() => {
-    if (!q.trim()) return INSTRUMENTS
-    const needle = q.trim().toLowerCase()
-    return INSTRUMENTS.filter((i) =>
-      i.symbol.toLowerCase().includes(needle) || i.name.toLowerCase().includes(needle),
-    )
-  }, [q])
+  useEffect(() => {
+    defaultInstruments(1).then((r) => r[0] && setPick(r[0])).catch(() => {})
+  }, [])
 
   // Candles + anomaly whenever the pick changes
   useEffect(() => {
+    if (!pick) return
     let alive = true
-    setErrC(null); setCandles([]); setAnomaly(null)
+    setErrC(null); setCandles([]); setAnomaly(null); setSentiment(null)
     fetchCandles(pick.key, 'day', 45)
       .then((r) => {
         if (!alive) return
@@ -36,10 +33,11 @@ export default function Signals() {
       })
       .catch((e) => alive && setErrC(e instanceof Error ? e.message : String(e)))
     return () => { alive = false }
-  }, [pick.key])
+  }, [pick?.key])
 
   // Sentiment on demand (Groq calls aren't free of latency; don't auto-fire)
   const loadSentiment = async () => {
+    if (!pick) return
     setBusyS(true); setErrS(null)
     try {
       const r = await fetchSentiment(pick.symbol)
@@ -63,30 +61,9 @@ export default function Signals() {
       </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4">
-        {/* symbol picker */}
-        <aside className="rounded-xl border border-neutral-900 bg-neutral-950 flex flex-col overflow-hidden max-h-[70vh]">
-          <div className="p-3 border-b border-neutral-900">
-            <input
-              value={q} onChange={(e) => setQ(e.target.value)}
-              placeholder="Search RELIANCE, TCS…"
-              className="w-full h-9 rounded-md bg-neutral-900 border border-neutral-800 px-3 text-xs outline-none focus:border-violet-600"
-            />
-          </div>
-          <ul className="overflow-y-auto flex-1">
-            {results.map((i) => (
-              <li key={i.key}>
-                <button
-                  onClick={() => setPick(i)}
-                  className={`w-full text-left px-3 py-2 border-b border-neutral-900 hover:bg-neutral-900/60 transition ${
-                    pick.key === i.key ? 'bg-violet-600/10' : ''
-                  }`}
-                >
-                  <div className="text-sm font-medium">{i.symbol}</div>
-                  <div className="text-[11px] text-neutral-500 truncate">{i.name}</div>
-                </button>
-              </li>
-            ))}
-          </ul>
+        {/* symbol picker — full NSE universe */}
+        <aside className="rounded-xl border border-neutral-900 bg-neutral-950 overflow-hidden h-[70vh]">
+          <SymbolSearch value={pick} onPick={setPick} maxHeight="calc(70vh - 84px)" />
         </aside>
 
         <div className="space-y-4">
@@ -97,7 +74,7 @@ export default function Signals() {
                 <div className="text-sm font-medium">Volume / price anomaly</div>
                 <div className="text-[11px] text-neutral-500">20-day z-score · |z| ≥ 2 flagged</div>
               </div>
-              <span className="text-xs text-neutral-500">{pick.symbol}</span>
+              <span className="text-xs text-neutral-500">{pick?.symbol ?? '—'}</span>
             </header>
 
             {errC && <div className="text-xs text-red-400">{errC}</div>}

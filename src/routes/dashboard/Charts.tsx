@@ -1,29 +1,27 @@
-import { useEffect, useMemo, useState } from 'react'
-import { INSTRUMENTS, type Instrument } from '@/lib/instruments'
+import { useEffect, useState } from 'react'
+import { defaultInstruments, type Instrument } from '@/lib/instruments'
 import { fetchCandles, fetchQuote, type Candle, type Interval } from '@/lib/upstox'
 import CandleChart from '@/components/CandleChart'
+import SymbolSearch from '@/components/SymbolSearch'
 
 const INTERVALS: Interval[] = ['30minute', 'day', 'week', 'month']
 
 export default function Charts() {
-  const [pick, setPick] = useState<Instrument>(INSTRUMENTS[0])
+  const [pick, setPick] = useState<Instrument | null>(null)
   const [interval, setInterval_] = useState<Interval>('day')
   const [candles, setCandles] = useState<Candle[]>([])
   const [price, setPrice] = useState<number | null>(null)
   const [prevClose, setPrevClose] = useState<number | null>(null)
   const [err, setErr] = useState<string | null>(null)
-  const [q, setQ] = useState('')
 
-  const results = useMemo(() => {
-    if (!q.trim()) return INSTRUMENTS
-    const needle = q.trim().toLowerCase()
-    return INSTRUMENTS.filter((i) =>
-      i.symbol.toLowerCase().includes(needle) || i.name.toLowerCase().includes(needle),
-    )
-  }, [q])
+  // seed with the most actively traded name
+  useEffect(() => {
+    defaultInstruments(1).then((r) => r[0] && setPick(r[0])).catch(() => {})
+  }, [])
 
   // history
   useEffect(() => {
+    if (!pick) return
     let alive = true
     setErr(null); setCandles([])
     fetchCandles(pick.key, interval, interval === 'day' ? 180 : interval === 'week' ? 730 : 30)
@@ -37,10 +35,11 @@ export default function Charts() {
       })
       .catch((e) => alive && setErr(String(e.message ?? e)))
     return () => { alive = false }
-  }, [pick.key, interval])
+  }, [pick?.key, interval])
 
   // live quote poll (5s)
   useEffect(() => {
+    if (!pick) return
     let alive = true
     const tick = () =>
       fetchQuote(pick.key)
@@ -49,7 +48,7 @@ export default function Charts() {
     tick()
     const id = window.setInterval(tick, 5_000)
     return () => { alive = false; window.clearInterval(id) }
-  }, [pick.key])
+  }, [pick?.key])
 
   const change = price != null && prevClose != null ? price - prevClose : null
   const changePct = change != null && prevClose ? (change / prevClose) * 100 : null
@@ -64,42 +63,16 @@ export default function Charts() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4">
-        {/* symbol picker */}
-        <aside className="rounded-xl border border-neutral-900 bg-neutral-950 flex flex-col overflow-hidden max-h-[70vh]">
-          <div className="p-3 border-b border-neutral-900">
-            <input
-              value={q} onChange={(e) => setQ(e.target.value)}
-              placeholder="Search RELIANCE, TCS…"
-              className="w-full h-9 rounded-md bg-neutral-900 border border-neutral-800 px-3 text-xs outline-none focus:border-violet-600"
-            />
-          </div>
-          <ul className="overflow-y-auto flex-1">
-            {results.map((i) => (
-              <li key={i.key}>
-                <button
-                  onClick={() => setPick(i)}
-                  className={`w-full text-left px-3 py-2 border-b border-neutral-900 hover:bg-neutral-900/60 transition ${
-                    pick.key === i.key ? 'bg-violet-600/10' : ''
-                  }`}
-                >
-                  <div className="text-sm font-medium">{i.symbol}</div>
-                  <div className="text-[11px] text-neutral-500 truncate">{i.name} · {i.sector}</div>
-                </button>
-              </li>
-            ))}
-            {results.length === 0 && (
-              <li className="p-4 text-xs text-neutral-500">
-                Not in the curated Nifty set yet — full universe lookup lands with the screener.
-              </li>
-            )}
-          </ul>
+        {/* symbol picker — full NSE universe */}
+        <aside className="rounded-xl border border-neutral-900 bg-neutral-950 overflow-hidden h-[70vh]">
+          <SymbolSearch value={pick} onPick={setPick} maxHeight="calc(70vh - 84px)" />
         </aside>
 
         {/* chart */}
         <section className="rounded-xl border border-neutral-900 bg-neutral-950 overflow-hidden">
           <div className="flex items-center justify-between p-4 border-b border-neutral-900">
             <div>
-              <div className="text-sm text-neutral-400">{pick.name}</div>
+              <div className="text-sm text-neutral-400">{pick?.name ?? 'Loading…'}</div>
               <div className="flex items-baseline gap-3">
                 <span className="text-2xl font-semibold tabular">
                   {price != null ? `₹${price.toFixed(2)}` : '—'}

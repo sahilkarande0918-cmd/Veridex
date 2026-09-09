@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { listHoldings, deleteHolding, type Holding } from '@/lib/portfolio'
 import { fetchQuote } from '@/lib/upstox'
-import { bySymbol } from '@/lib/instruments'
+import { resolveSymbols } from '@/lib/instruments'
 import AddHoldingModal from '@/components/AddHoldingModal'
 import AllocationChart from '@/components/AllocationChart'
 
@@ -34,20 +34,23 @@ export default function Portfolio() {
     if (holdings.length === 0) return
     const symbols = Array.from(new Set(holdings.map((h) => h.symbol)))
 
-    const tick = () => {
+    let alive = true
+    const tick = async () => {
+      const map = await resolveSymbols(symbols)
+      if (!alive) return
       symbols.forEach((sym) => {
-        const inst = bySymbol(sym)
+        const inst = map.get(sym.toUpperCase())
         if (!inst) return
         fetchQuote(inst.key)
           .then((r) => {
-            if (r.price != null) setPrices((p) => ({ ...p, [sym]: r.price! }))
+            if (alive && r.price != null) setPrices((p) => ({ ...p, [sym]: r.price! }))
           })
           .catch(() => {})
       })
     }
     tick()
     const id = window.setInterval(tick, 15_000)
-    return () => window.clearInterval(id)
+    return () => { alive = false; window.clearInterval(id) }
   }, [holdings])
 
   const rows = useMemo(() => holdings.map((h) => {

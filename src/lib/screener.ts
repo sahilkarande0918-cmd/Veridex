@@ -1,8 +1,7 @@
 // Transparent stock scoring. Every subscore is a simple, defensible
 // number the UI shows next to the composite.
 
-import { FUNDAMENTALS, type Fundamentals } from '@/data/fundamentals'
-import { INSTRUMENTS } from '@/lib/instruments'
+import { FUNDAMENTALS, META, type Fundamentals } from '@/data/fundamentals'
 
 export type Scored = {
   f: Fundamentals
@@ -47,7 +46,7 @@ export function score(capital: number, weights: Weights = DEFAULT_WEIGHTS): Scor
   const de_med = median(FUNDAMENTALS.map((f) => f.de))
 
   return FUNDAMENTALS.map((f): Scored => {
-    const inst = INSTRUMENTS.find((i) => i.symbol === f.symbol)
+    const meta = META[f.symbol]
     const value_score    = (lowerBetter(f.pe, pe_med) + lowerBetter(f.pb, pb_med)) / 2
     const leverage_score = lowerBetter(f.de, de_med)
     const growth_score   = growthScore(f.rev_growth)
@@ -58,8 +57,8 @@ export function score(capital: number, weights: Weights = DEFAULT_WEIGHTS): Scor
 
     return {
       f,
-      name: inst?.name ?? f.symbol,
-      sector: inst?.sector ?? '—',
+      name: meta?.name ?? f.symbol,
+      sector: meta?.sector ?? '—',
       value_score,
       leverage_score,
       growth_score,

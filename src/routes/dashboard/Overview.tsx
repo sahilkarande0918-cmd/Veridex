@@ -6,7 +6,7 @@ import { listHoldings, type Holding } from '@/lib/portfolio'
 import { fetchQuote } from '@/lib/upstox'
 import { fetchMarketSummary, type MarketSummary } from '@/lib/market'
 import { fetchFeed, relTime, type NewsItem } from '@/lib/news'
-import { bySymbol } from '@/lib/instruments'
+import { resolveSymbols } from '@/lib/instruments'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 12 },
@@ -26,12 +26,19 @@ export default function Overview() {
 
   useEffect(() => {
     if (holdings.length === 0) return
+    let alive = true
     const syms = Array.from(new Set(holdings.map((h) => h.symbol)))
-    syms.forEach((sym) => {
-      const inst = bySymbol(sym)
-      if (!inst) return
-      fetchQuote(inst.key).then((r) => r.price != null && setPrices((p) => ({ ...p, [sym]: r.price! }))).catch(() => {})
-    })
+    resolveSymbols(syms).then((map) => {
+      if (!alive) return
+      syms.forEach((sym) => {
+        const inst = map.get(sym.toUpperCase())
+        if (!inst) return
+        fetchQuote(inst.key)
+          .then((r) => alive && r.price != null && setPrices((p) => ({ ...p, [sym]: r.price! })))
+          .catch(() => {})
+      })
+    }).catch(() => {})
+    return () => { alive = false }
   }, [holdings])
 
   const portfolio = useMemo(() => {

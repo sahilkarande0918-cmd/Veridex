@@ -12,6 +12,7 @@ const navItems: NavItem[] = [
   { to: '/dashboard',           label: 'Overview',  icon: '⬢' },
   { to: '/dashboard/profile',   label: 'Profile',   icon: '◉' },
   { to: '/dashboard/charts',    label: 'Charts',    icon: '⌁' },
+  { to: '/dashboard/analyze',   label: 'Analyze',   icon: '◈' },
   { to: '/dashboard/portfolio', label: 'Portfolio', icon: '◫' },
   { to: '/dashboard/screener',  label: 'Screener',  icon: '⧉' },
   { to: '/dashboard/signals',   label: 'Signals',   icon: '⌾' },

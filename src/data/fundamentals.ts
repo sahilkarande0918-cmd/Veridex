@@ -59,3 +59,39 @@ export const FUNDAMENTALS: Fundamentals[] = [
 
 export const bySymbol = (sym: string) =>
   FUNDAMENTALS.find((f) => f.symbol === sym)
+
+// Display metadata for the sample cohort. Kept here (not in the live
+// instrument universe) because the NSE master has no sector field —
+// this map only ever covers the illustrative screener set above.
+export const META: Record<string, { name: string; sector: string }> = {
+  RELIANCE: { name: 'Reliance Industries', sector: 'Energy' },
+  TCS: { name: 'Tata Consultancy', sector: 'IT' },
+  HDFCBANK: { name: 'HDFC Bank', sector: 'Financials' },
+  INFY: { name: 'Infosys', sector: 'IT' },
+  ICICIBANK: { name: 'ICICI Bank', sector: 'Financials' },
+  HINDUNILVR: { name: 'Hindustan Unilever', sector: 'FMCG' },
+  ITC: { name: 'ITC', sector: 'FMCG' },
+  SBIN: { name: 'State Bank of India', sector: 'Financials' },
+  BHARTIARTL: { name: 'Bharti Airtel', sector: 'Telecom' },
+  KOTAKBANK: { name: 'Kotak Mahindra Bank', sector: 'Financials' },
+  LT: { name: 'Larsen & Toubro', sector: 'Construction' },
+  AXISBANK: { name: 'Axis Bank', sector: 'Financials' },
+  ASIANPAINT: { name: 'Asian Paints', sector: 'Consumer' },
+  MARUTI: { name: 'Maruti Suzuki', sector: 'Auto' },
+  BAJFINANCE: { name: 'Bajaj Finance', sector: 'Financials' },
+  TITAN: { name: 'Titan Company', sector: 'Consumer' },
+  SUNPHARMA: { name: 'Sun Pharmaceutical', sector: 'Pharma' },
+  NESTLEIND: { name: 'Nestle India', sector: 'FMCG' },
+  WIPRO: { name: 'Wipro', sector: 'IT' },
+  ULTRACEMCO: { name: 'UltraTech Cement', sector: 'Cement' },
+  HCLTECH: { name: 'HCL Technologies', sector: 'IT' },
+  'M&M': { name: 'Mahindra & Mahindra', sector: 'Auto' },
+  ADANIENT: { name: 'Adani Enterprises', sector: 'Conglomerate' },
+  NTPC: { name: 'NTPC', sector: 'Power' },
+  POWERGRID: { name: 'Power Grid', sector: 'Power' },
+  TATAMOTORS: { name: 'Tata Motors', sector: 'Auto' },
+  TATASTEEL: { name: 'Tata Steel', sector: 'Metals' },
+  ONGC: { name: 'Oil and Natural Gas', sector: 'Energy' },
+  JSWSTEEL: { name: 'JSW Steel', sector: 'Metals' },
+  COALINDIA: { name: 'Coal India', sector: 'Energy' },
+}

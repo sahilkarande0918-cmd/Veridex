@@ -1,51 +1,99 @@
-// Curated Nifty-heavyweights instrument keys for Upstox.
-// ponytail: hardcoded 30 tickers for the demo. Full universe = fetch
-// Upstox's instrument CSV once daily and cache in a Supabase table.
-// Do that when a user actually asks for a stock not on this list.
+// Instrument universe — backed by the full NSE master in Postgres
+// (~2,900 equities), not a hardcoded list.
+//
+// Search goes through the relevance-ranked `search_instruments` RPC.
+// Symbol → instrument_key lookups are cached in-module because the
+// portfolio views resolve the same handful of tickers repeatedly.
+
+import { supabase } from './supabase'
 
 export type Instrument = {
-  symbol: string       // display ticker (RELIANCE)
-  name:   string       // display name (Reliance Industries)
-  sector: string
-  key:    string       // Upstox instrument key (NSE_EQ|ISIN)
+  symbol: string
+  name: string
+  key: string                 // Upstox instrument_key
   exchange: 'NSE'
+  last_price?: number | null
+  pct_change?: number | null
 }
 
-export const INSTRUMENTS: Instrument[] = [
-  { symbol: 'RELIANCE',   name: 'Reliance Industries',     sector: 'Energy',      key: 'NSE_EQ|INE002A01018', exchange: 'NSE' },
-  { symbol: 'TCS',        name: 'Tata Consultancy',        sector: 'IT',          key: 'NSE_EQ|INE467B01029', exchange: 'NSE' },
-  { symbol: 'HDFCBANK',   name: 'HDFC Bank',               sector: 'Financials',  key: 'NSE_EQ|INE040A01034', exchange: 'NSE' },
-  { symbol: 'INFY',       name: 'Infosys',                 sector: 'IT',          key: 'NSE_EQ|INE009A01021', exchange: 'NSE' },
-  { symbol: 'ICICIBANK',  name: 'ICICI Bank',              sector: 'Financials',  key: 'NSE_EQ|INE090A01021', exchange: 'NSE' },
-  { symbol: 'HINDUNILVR', name: 'Hindustan Unilever',      sector: 'FMCG',        key: 'NSE_EQ|INE030A01027', exchange: 'NSE' },
-  { symbol: 'ITC',        name: 'ITC',                     sector: 'FMCG',        key: 'NSE_EQ|INE154A01025', exchange: 'NSE' },
-  { symbol: 'SBIN',       name: 'State Bank of India',     sector: 'Financials',  key: 'NSE_EQ|INE062A01020', exchange: 'NSE' },
-  { symbol: 'BHARTIARTL', name: 'Bharti Airtel',           sector: 'Telecom',     key: 'NSE_EQ|INE397D01024', exchange: 'NSE' },
-  { symbol: 'KOTAKBANK',  name: 'Kotak Mahindra Bank',     sector: 'Financials',  key: 'NSE_EQ|INE237A01028', exchange: 'NSE' },
-  { symbol: 'LT',         name: 'Larsen & Toubro',         sector: 'Construction',key: 'NSE_EQ|INE018A01030', exchange: 'NSE' },
-  { symbol: 'AXISBANK',   name: 'Axis Bank',               sector: 'Financials',  key: 'NSE_EQ|INE238A01034', exchange: 'NSE' },
-  { symbol: 'ASIANPAINT', name: 'Asian Paints',            sector: 'Consumer',    key: 'NSE_EQ|INE021A01026', exchange: 'NSE' },
-  { symbol: 'MARUTI',     name: 'Maruti Suzuki',           sector: 'Auto',        key: 'NSE_EQ|INE585B01010', exchange: 'NSE' },
-  { symbol: 'BAJFINANCE', name: 'Bajaj Finance',           sector: 'Financials',  key: 'NSE_EQ|INE296A01024', exchange: 'NSE' },
-  { symbol: 'TITAN',      name: 'Titan Company',           sector: 'Consumer',    key: 'NSE_EQ|INE280A01028', exchange: 'NSE' },
-  { symbol: 'SUNPHARMA',  name: 'Sun Pharmaceutical',      sector: 'Pharma',      key: 'NSE_EQ|INE044A01036', exchange: 'NSE' },
-  { symbol: 'NESTLEIND',  name: 'Nestle India',            sector: 'FMCG',        key: 'NSE_EQ|INE239A01024', exchange: 'NSE' },
-  { symbol: 'WIPRO',      name: 'Wipro',                   sector: 'IT',          key: 'NSE_EQ|INE075A01022', exchange: 'NSE' },
-  { symbol: 'ULTRACEMCO', name: 'UltraTech Cement',        sector: 'Cement',      key: 'NSE_EQ|INE481G01011', exchange: 'NSE' },
-  { symbol: 'HCLTECH',    name: 'HCL Technologies',        sector: 'IT',          key: 'NSE_EQ|INE860A01027', exchange: 'NSE' },
-  { symbol: 'M&M',        name: 'Mahindra & Mahindra',     sector: 'Auto',        key: 'NSE_EQ|INE101A01026', exchange: 'NSE' },
-  { symbol: 'ADANIENT',   name: 'Adani Enterprises',       sector: 'Conglomerate',key: 'NSE_EQ|INE423A01024', exchange: 'NSE' },
-  { symbol: 'NTPC',       name: 'NTPC',                    sector: 'Power',       key: 'NSE_EQ|INE733E01010', exchange: 'NSE' },
-  { symbol: 'POWERGRID',  name: 'Power Grid',              sector: 'Power',       key: 'NSE_EQ|INE752E01010', exchange: 'NSE' },
-  { symbol: 'TATAMOTORS', name: 'Tata Motors',             sector: 'Auto',        key: 'NSE_EQ|INE155A01022', exchange: 'NSE' },
-  { symbol: 'TATASTEEL',  name: 'Tata Steel',              sector: 'Metals',      key: 'NSE_EQ|INE081A01020', exchange: 'NSE' },
-  { symbol: 'ONGC',       name: 'Oil and Natural Gas',     sector: 'Energy',      key: 'NSE_EQ|INE213A01029', exchange: 'NSE' },
-  { symbol: 'JSWSTEEL',   name: 'JSW Steel',               sector: 'Metals',      key: 'NSE_EQ|INE019A01038', exchange: 'NSE' },
-  { symbol: 'COALINDIA',  name: 'Coal India',              sector: 'Energy',      key: 'NSE_EQ|INE522F01014', exchange: 'NSE' },
-]
+type Row = {
+  instrument_key: string
+  trading_symbol: string
+  name: string
+  short_name: string | null
+  last_price: number | null
+  pct_change: number | null
+}
 
-export const bySymbol = (sym: string) =>
-  INSTRUMENTS.find((i) => i.symbol.toUpperCase() === sym.toUpperCase())
+const toInstrument = (r: Row): Instrument => ({
+  symbol: r.trading_symbol,
+  name: r.short_name || r.name,
+  key: r.instrument_key,
+  exchange: 'NSE',
+  last_price: r.last_price,
+  pct_change: r.pct_change,
+})
 
-export const byKey = (key: string) =>
-  INSTRUMENTS.find((i) => i.key === key)
+/** Relevance-ranked search across the whole NSE equity universe. */
+export async function searchInstruments(q: string, limit = 20): Promise<Instrument[]> {
+  const term = q.trim()
+  if (!term) return defaultInstruments(limit)
+  const { data, error } = await supabase.rpc('search_instruments', { q: term, lim: limit })
+  if (error) throw error
+  return ((data ?? []) as Row[]).map(toInstrument)
+}
+
+/** Most actively traded names — shown before the user types anything. */
+export async function defaultInstruments(limit = 20): Promise<Instrument[]> {
+  const { data, error } = await supabase
+    .from('market_snapshot')
+    .select('instrument_key,trading_symbol,last_price,pct_change,instruments(name,short_name)')
+    .order('volume', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  type Snap = {
+    instrument_key: string; trading_symbol: string
+    last_price: number | null; pct_change: number | null
+    instruments: { name: string; short_name: string | null } | null
+  }
+  return ((data ?? []) as unknown as Snap[]).map((s) => ({
+    symbol: s.trading_symbol,
+    name: s.instruments?.short_name || s.instruments?.name || s.trading_symbol,
+    key: s.instrument_key,
+    exchange: 'NSE' as const,
+    last_price: s.last_price,
+    pct_change: s.pct_change,
+  }))
+}
+
+// ---- symbol → instrument cache -------------------------------------
+const cache = new Map<string, Instrument>()
+
+/** Resolve many tickers to instruments at once. Cached across calls. */
+export async function resolveSymbols(symbols: string[]): Promise<Map<string, Instrument>> {
+  const want = Array.from(new Set(symbols.map((s) => s.toUpperCase()))).filter(Boolean)
+  const missing = want.filter((s) => !cache.has(s))
+
+  if (missing.length) {
+    const { data } = await supabase
+      .from('instruments')
+      .select('instrument_key,trading_symbol,name,short_name')
+      .in('trading_symbol', missing)
+    for (const r of (data ?? []) as Omit<Row, 'last_price' | 'pct_change'>[]) {
+      cache.set(r.trading_symbol.toUpperCase(), toInstrument({ ...r, last_price: null, pct_change: null }))
+    }
+  }
+
+  const out = new Map<string, Instrument>()
+  for (const s of want) {
+    const hit = cache.get(s)
+    if (hit) out.set(s, hit)
+  }
+  return out
+}
+
+/** Single-symbol convenience wrapper over resolveSymbols. */
+export async function getInstrument(symbol: string): Promise<Instrument | null> {
+  const m = await resolveSymbols([symbol])
+  return m.get(symbol.toUpperCase()) ?? null
+}

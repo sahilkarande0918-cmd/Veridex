@@ -1,6 +1,7 @@
-import { useMemo, useState, type FormEvent } from 'react'
-import { INSTRUMENTS, type Instrument } from '@/lib/instruments'
+import { useState, type FormEvent } from 'react'
+import { type Instrument } from '@/lib/instruments'
 import { addHolding } from '@/lib/portfolio'
+import SymbolSearch from '@/components/SymbolSearch'
 
 export default function AddHoldingModal({
   onClose, onCreated,
@@ -8,7 +9,6 @@ export default function AddHoldingModal({
   onClose: () => void
   onCreated: () => void
 }) {
-  const [q, setQ] = useState('')
   const [picked, setPicked] = useState<Instrument | null>(null)
   const [qty, setQty] = useState('')
   const [buyPrice, setBuyPrice] = useState('')
@@ -16,14 +16,6 @@ export default function AddHoldingModal({
   const [notes, setNotes] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
-
-  const results = useMemo(() => {
-    const needle = q.trim().toLowerCase()
-    if (!needle) return INSTRUMENTS.slice(0, 8)
-    return INSTRUMENTS.filter((i) =>
-      i.symbol.toLowerCase().includes(needle) || i.name.toLowerCase().includes(needle),
-    ).slice(0, 8)
-  }, [q])
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -68,26 +60,14 @@ export default function AddHoldingModal({
               <button type="button" onClick={() => setPicked(null)} className="text-xs text-violet-400">change</button>
             </div>
           ) : (
-            <>
-              <input
-                value={q} onChange={(e) => setQ(e.target.value)}
-                placeholder="Search RELIANCE, TCS…"
-                className="w-full h-10 rounded-md bg-neutral-900 border border-neutral-800 px-3 text-sm outline-none focus:border-violet-600"
+            <div className="rounded-md border border-neutral-900 overflow-hidden h-56">
+              <SymbolSearch
+                onPick={setPicked}
+                autoFocus
+                placeholder="Search any NSE stock…"
+                maxHeight="calc(14rem - 84px)"
               />
-              <ul className="max-h-40 overflow-y-auto rounded-md border border-neutral-900 divide-y divide-neutral-900">
-                {results.map((i) => (
-                  <li key={i.key}>
-                    <button
-                      type="button" onClick={() => setPicked(i)}
-                      className="w-full text-left px-3 py-2 hover:bg-neutral-900 text-sm"
-                    >
-                      <span className="font-medium">{i.symbol}</span>
-                      <span className="text-neutral-500 ml-2 text-xs">{i.name}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </>
+            </div>
           )}
         </div>
 
