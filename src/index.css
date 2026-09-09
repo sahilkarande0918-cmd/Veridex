@@ -195,3 +195,17 @@ body {
 :root[data-theme="light"] textarea,
 :root[data-theme="light"] select { caret-color: #0891b2; color: #0f172a; background-color: rgba(255,255,255,0.6); }
 :root[data-theme="light"] input::placeholder { color: #94a3b8; }
+
+/* =====================================================================
+   Sticky dashboard app bar (ticker + header).
+   Must be fully opaque in BOTH themes — it pins over scrolling content,
+   and any transparency lets page text bleed through it.
+   ===================================================================== */
+.vx-appbar { background-color: #000000; }
+.vx-appbar > * { background-color: inherit !important; backdrop-filter: none !important; }
+
+:root[data-theme="dark"] .vx-appbar  { background-color: #000000 !important; }
+:root[data-theme="light"] .vx-appbar { background-color: #ffffff !important; }
+:root[data-theme="light"] .vx-appbar,
+:root[data-theme="light"] .vx-appbar > * { box-shadow: none !important; }
+:root[data-theme="light"] .vx-appbar { box-shadow: 0 1px 0 rgba(15, 23, 42, 0.06) !important; }

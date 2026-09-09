@@ -63,16 +63,21 @@ export default function DashboardShell() {
       </aside>
 
       <div className="flex flex-col min-w-0">
-        <TickerTape />
-        <header className="h-14 border-b border-neutral-900 flex items-center justify-between px-6 bg-neutral-950/40 backdrop-blur sticky top-8 z-20">
-          <div className="text-sm text-neutral-400">Dashboard</div>
-          <div className="flex items-center gap-4">
-            <MarketStatus />
-            <ThemeToggle />
-            <AlertsBell />
-          </div>
-        </header>
-        <main className="flex-1 p-6 overflow-auto">
+        {/* Ticker + header pin together. Previously only the header was
+            sticky (at top-8), so scrolling took the ticker away and left
+            a transparent 32px window that page content showed through. */}
+        <div className="vx-appbar sticky top-0 z-30">
+          <TickerTape />
+          <header className="h-14 border-b border-neutral-900 flex items-center justify-between px-6">
+            <div className="text-sm text-neutral-400">Dashboard</div>
+            <div className="flex items-center gap-4">
+              <MarketStatus />
+              <ThemeToggle />
+              <AlertsBell />
+            </div>
+          </header>
+        </div>
+        <main className="flex-1 p-6">
           <Outlet />
         </main>
         <footer className="px-6 pb-4">
