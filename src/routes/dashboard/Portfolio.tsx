@@ -126,8 +126,8 @@ export default function Portfolio() {
 
       {holdings.length > 0 && (
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-4">
-          <section className="rounded-xl border border-neutral-900 bg-neutral-950 overflow-hidden">
-            <table className="w-full text-sm">
+          <section className="rounded-xl border border-neutral-900 bg-neutral-950 overflow-x-auto">
+            <table className="w-full text-sm min-w-[680px]">
               <thead className="text-[11px] uppercase tracking-wider text-neutral-500 bg-neutral-900/50">
                 <tr>
                   <Th>Symbol</Th>

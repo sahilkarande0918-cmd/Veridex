@@ -107,11 +107,11 @@ export default function ProfilePage() {
       <motion.div
         initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="rounded-2xl border border-neutral-900 bg-gradient-to-br from-violet-600/[0.08] via-neutral-950 to-neutral-950 p-6 relative overflow-hidden"
+        className="rounded-2xl border border-neutral-900 bg-gradient-to-br from-violet-600/[0.08] via-neutral-950 to-neutral-950 p-5 sm:p-6 relative overflow-hidden"
       >
         <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-violet-500/10 blur-3xl pointer-events-none" />
         <div className="text-[10px] uppercase tracking-wider text-neutral-500">Total net worth</div>
-        <div className="text-4xl font-semibold tabular mt-1">₹<AnimatedNumber value={netWorth} /></div>
+        <div className="text-3xl sm:text-4xl font-semibold tabular mt-1 break-all">₹<AnimatedNumber value={netWorth} /></div>
         <div className={`text-sm tabular mt-1 ${totals.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
           {totals.pnl >= 0 ? '▲' : '▼'} ₹{fmt(Math.abs(totals.pnl))} ({totals.pnlPct.toFixed(2)}%)
           <span className="text-neutral-500 ml-2">on stocks</span>
@@ -133,7 +133,8 @@ export default function ProfilePage() {
               No positions yet — <Link to="/dashboard/portfolio" className="text-violet-400 hover:text-violet-300">add one</Link>.
             </div>
           ) : (
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto -mx-1 px-1">
+            <table className="w-full text-sm min-w-[440px]">
               <thead className="text-[10px] uppercase tracking-wider text-neutral-500">
                 <tr>
                   <th className="text-left font-normal pb-2">Stock</th>
@@ -160,6 +161,7 @@ export default function ProfilePage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
 

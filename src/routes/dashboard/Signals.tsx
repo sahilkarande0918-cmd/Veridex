@@ -62,8 +62,8 @@ export default function Signals() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4">
         {/* symbol picker — full NSE universe */}
-        <aside className="rounded-xl border border-neutral-900 bg-neutral-950 overflow-hidden h-[70vh]">
-          <SymbolSearch value={pick} onPick={setPick} maxHeight="calc(70vh - 84px)" />
+        <aside className="rounded-xl border border-neutral-900 bg-neutral-950 overflow-hidden h-[44vh] lg:h-[70vh]">
+          <SymbolSearch value={pick} onPick={setPick} />
         </aside>
 
         <div className="space-y-4">

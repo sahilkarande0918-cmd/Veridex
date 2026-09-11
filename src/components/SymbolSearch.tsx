@@ -6,12 +6,15 @@ import { searchInstruments, type Instrument } from '@/lib/instruments'
 
 export default function SymbolSearch({
   value, onPick, placeholder = 'Search any NSE stock — RELIANCE, IRFC, Suzlon…',
-  autoFocus = false, maxHeight = '60vh',
+  autoFocus = false, maxHeight = '100%',
 }: {
   value?: Instrument | null
   onPick: (i: Instrument) => void
   placeholder?: string
   autoFocus?: boolean
+  /** Panel callers leave this at 100% — the list is flex-1 inside an
+   *  h-full column, so the container's own (responsive) height bounds it.
+   *  A hardcoded vh calc here can't follow a breakpoint. */
   maxHeight?: string
 }) {
   const [q, setQ] = useState('')

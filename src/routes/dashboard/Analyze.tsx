@@ -50,8 +50,8 @@ export default function Analyze() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4">
-        <aside className="rounded-xl border border-neutral-900 bg-neutral-950 overflow-hidden h-[75vh]">
-          <SymbolSearch value={pick} onPick={setPick} maxHeight="calc(75vh - 84px)" />
+        <aside className="rounded-xl border border-neutral-900 bg-neutral-950 overflow-hidden h-[44vh] lg:h-[75vh]">
+          <SymbolSearch value={pick} onPick={setPick} />
         </aside>
 
         <section className="space-y-4 min-w-0">

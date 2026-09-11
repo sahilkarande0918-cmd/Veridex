@@ -1,4 +1,5 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
 import MarketStatus from './MarketStatus'
 import Disclaimer from './Disclaimer'
@@ -23,17 +24,54 @@ const navItems: NavItem[] = [
 export default function DashboardShell() {
   const { user, signOut } = useAuth()
   const nav = useNavigate()
+  const { pathname } = useLocation()
+  // Below lg the sidebar is an overlay drawer — a 220px rail would eat
+  // more than half of a 375px screen. At lg+ it is always open and the
+  // `open` state is ignored entirely.
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => { setOpen(false) }, [pathname])
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
   const doSignOut = async () => { await signOut(); nav('/') }
 
   return (
-    <div className="min-h-screen grid grid-cols-[220px_1fr] bg-[radial-gradient(circle_at_top,_rgba(124,58,237,0.04)_0%,_transparent_50%)]">
-      <aside className="border-r border-neutral-900 bg-neutral-950/60 backdrop-blur p-4 flex flex-col gap-6 sticky top-0 h-screen">
-        <div className="flex items-center gap-2 font-semibold tracking-tight px-2">
-          <span className="size-2 rounded-full bg-violet-500 shadow-[0_0_8px_rgba(124,58,237,0.8)]" />
-          Veridex
+    <div className="min-h-screen lg:grid lg:grid-cols-[220px_1fr] bg-[radial-gradient(circle_at_top,_rgba(124,58,237,0.04)_0%,_transparent_50%)]">
+      {open && (
+        <button
+          aria-label="Close menu"
+          onClick={() => setOpen(false)}
+          className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+        />
+      )}
+
+      <aside
+        className={`vx-sidebar border-r border-neutral-900 bg-neutral-950 lg:bg-neutral-950/60 backdrop-blur p-4 flex flex-col gap-6
+          sticky top-0 h-screen
+          max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-50 max-lg:w-[260px] max-lg:max-w-[82vw]
+          max-lg:transition-transform max-lg:duration-200 max-lg:ease-out
+          ${open ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-full'}`}
+      >
+        <div className="flex items-center justify-between gap-2 px-2">
+          <div className="flex items-center gap-2 font-semibold tracking-tight">
+            <span className="size-2 rounded-full bg-violet-500 shadow-[0_0_8px_rgba(124,58,237,0.8)]" />
+            Veridex
+          </div>
+          <button
+            onClick={() => setOpen(false)}
+            aria-label="Close menu"
+            className="lg:hidden size-8 -mr-1 rounded-md text-neutral-400 hover:bg-neutral-900 text-lg leading-none"
+          >
+            ✕
+          </button>
         </div>
 
-        <nav className="flex flex-col gap-0.5 text-sm">
+        <nav className="flex flex-col gap-0.5 text-sm overflow-y-auto">
           {navItems.map((i) => (
             <NavLink
               key={i.to} to={i.to} end={i.to === '/dashboard'}
@@ -68,19 +106,30 @@ export default function DashboardShell() {
             a transparent 32px window that page content showed through. */}
         <div className="vx-appbar sticky top-0 z-30">
           <TickerTape />
-          <header className="h-14 border-b border-neutral-900 flex items-center justify-between px-6">
-            <div className="text-sm text-neutral-400">Dashboard</div>
-            <div className="flex items-center gap-4">
-              <MarketStatus />
+          <header className="h-14 border-b border-neutral-900 flex items-center justify-between gap-2 px-4 sm:px-6">
+            <div className="flex items-center gap-2 min-w-0">
+              <button
+                onClick={() => setOpen(true)}
+                aria-label="Open menu"
+                className="lg:hidden size-9 -ml-1.5 shrink-0 rounded-md text-neutral-300 hover:bg-neutral-900 flex flex-col items-center justify-center gap-[3px]"
+              >
+                <span className="block w-4 h-px bg-current" />
+                <span className="block w-4 h-px bg-current" />
+                <span className="block w-4 h-px bg-current" />
+              </button>
+              <div className="text-sm text-neutral-400 truncate">Dashboard</div>
+            </div>
+            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+              <div className="hidden sm:block"><MarketStatus /></div>
               <ThemeToggle />
               <AlertsBell />
             </div>
           </header>
         </div>
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4 sm:p-6">
           <Outlet />
         </main>
-        <footer className="px-6 pb-4">
+        <footer className="px-4 sm:px-6 pb-4">
           <Disclaimer />
         </footer>
       </div>

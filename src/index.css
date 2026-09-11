@@ -257,3 +257,32 @@ body {
   background-color: #8b5cf6 !important;
   background-image: none !important;
 }
+
+/* =====================================================================
+   MOBILE
+   Layout responsiveness lives in the components as Tailwind breakpoints.
+   These are the global fixes that can't be expressed per-component.
+   ===================================================================== */
+
+/* Deliberately NOT setting overflow-x:hidden on html/body — it turns the
+   body into a scroll container and breaks position:sticky on .vx-appbar.
+   Overflow is fixed at the source: wide tables scroll inside their own
+   overflow-x-auto wrapper, and grids collapse to one column. */
+html { -webkit-text-size-adjust: 100%; }
+
+/* iOS Safari zooms the whole page when a focused control's font is
+   under 16px. Every input here is text-sm (14px), so force 16px on
+   touch devices only — pointer:coarse leaves desktop sizing alone. */
+@media (pointer: coarse) {
+  input, select, textarea { font-size: 16px; }
+}
+
+/* Touch targets: the icon buttons are fine, but the marquee pauses on
+   :hover, which a touch device can never trigger — and an 80s loop of
+   unreadable text is just noise on a phone. Slow it instead. */
+@media (max-width: 640px) {
+  .veridex-marquee { animation-duration: 120s; }
+}
+
+/* Sticky app bar + a drawer that slides over it: the drawer wins. */
+.vx-sidebar { will-change: transform; }

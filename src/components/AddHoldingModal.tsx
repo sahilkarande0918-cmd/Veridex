@@ -42,8 +42,8 @@ export default function AddHoldingModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-      <form onSubmit={submit} className="w-full max-w-md rounded-xl border border-neutral-800 bg-neutral-950 p-6 space-y-4">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+      <form onSubmit={submit} className="w-full max-w-md my-auto rounded-xl border border-neutral-800 bg-neutral-950 p-5 sm:p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Add position</h2>
           <button type="button" onClick={onClose} className="text-neutral-500 hover:text-neutral-300">✕</button>
@@ -52,12 +52,12 @@ export default function AddHoldingModal({
         <div className="space-y-1.5">
           <span className="text-xs text-neutral-400">Stock</span>
           {picked ? (
-            <div className="flex items-center justify-between rounded-md border border-neutral-800 bg-neutral-900 px-3 h-10">
-              <div className="text-sm">
+            <div className="flex items-center justify-between gap-2 rounded-md border border-neutral-800 bg-neutral-900 px-3 h-10">
+              <div className="text-sm min-w-0 truncate">
                 <span className="font-medium">{picked.symbol}</span>
                 <span className="text-neutral-500 ml-2">{picked.name}</span>
               </div>
-              <button type="button" onClick={() => setPicked(null)} className="text-xs text-violet-400">change</button>
+              <button type="button" onClick={() => setPicked(null)} className="text-xs text-violet-400 shrink-0">change</button>
             </div>
           ) : (
             <div className="rounded-md border border-neutral-900 overflow-hidden h-56">
@@ -65,7 +65,6 @@ export default function AddHoldingModal({
                 onPick={setPicked}
                 autoFocus
                 placeholder="Search any NSE stock…"
-                maxHeight="calc(14rem - 84px)"
               />
             </div>
           )}

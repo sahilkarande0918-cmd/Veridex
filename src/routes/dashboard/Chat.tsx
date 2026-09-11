@@ -51,7 +51,7 @@ export default function Chat() {
   }
 
   return (
-    <div className="space-y-3 flex flex-col h-[calc(100vh-11rem)] min-h-[26rem]">
+    <div className="space-y-3 flex flex-col h-[calc(100dvh-13rem)] sm:h-[calc(100dvh-11rem)] min-h-[24rem]">
       <div className="flex items-center gap-3">
         <h1 className="text-3xl font-semibold tracking-tight">AI Chat</h1>
         <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
@@ -97,11 +97,11 @@ export default function Chat() {
           value={input} onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about the market, your holdings, or a specific stock…"
           disabled={busy}
-          className="flex-1 h-11 rounded-md bg-neutral-900 border border-neutral-800 px-3 text-sm outline-none focus:border-violet-600 disabled:opacity-50"
+          className="flex-1 min-w-0 h-11 rounded-md bg-neutral-900 border border-neutral-800 px-3 text-sm outline-none focus:border-violet-600 disabled:opacity-50"
         />
         <button
           type="submit" disabled={busy || !input.trim()}
-          className="h-11 px-5 rounded-md bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-sm font-medium"
+          className="h-11 px-4 sm:px-5 shrink-0 rounded-md bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-sm font-medium"
         >
           Send
         </button>
@@ -116,7 +116,7 @@ function Bubble({ turn }: { turn: Turn }) {
   const isUser = turn.role === 'user'
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-      <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
+      <div className={`max-w-[90%] sm:max-w-[80%] min-w-0 rounded-2xl px-3.5 sm:px-4 py-2.5 text-sm ${
         isUser ? 'bg-violet-600 text-white' : 'bg-neutral-900 border border-neutral-800 text-neutral-100'
       }`}>
         {isUser

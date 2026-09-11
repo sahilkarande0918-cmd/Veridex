@@ -64,13 +64,13 @@ export default function Charts() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4">
         {/* symbol picker — full NSE universe */}
-        <aside className="rounded-xl border border-neutral-900 bg-neutral-950 overflow-hidden h-[70vh]">
-          <SymbolSearch value={pick} onPick={setPick} maxHeight="calc(70vh - 84px)" />
+        <aside className="rounded-xl border border-neutral-900 bg-neutral-950 overflow-hidden h-[44vh] lg:h-[70vh]">
+          <SymbolSearch value={pick} onPick={setPick} />
         </aside>
 
         {/* chart */}
         <section className="rounded-xl border border-neutral-900 bg-neutral-950 overflow-hidden">
-          <div className="flex items-center justify-between p-4 border-b border-neutral-900">
+          <div className="flex items-center justify-between flex-wrap gap-3 p-4 border-b border-neutral-900">
             <div>
               <div className="text-sm text-neutral-400">{pick?.name ?? 'Loading…'}</div>
               <div className="flex items-baseline gap-3">
@@ -98,7 +98,7 @@ export default function Charts() {
             </div>
           </div>
 
-          <div className="h-[420px] relative">
+          <div className="h-[300px] sm:h-[420px] relative">
             {err && (
               <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
                 <div className="max-w-md space-y-2">

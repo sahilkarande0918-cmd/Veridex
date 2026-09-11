@@ -31,7 +31,7 @@ export default function Landing() {
     // keeps the dark palette even when the app theme is light.
     <main data-surface="dark" className="min-h-screen relative">
       <VideoBackdrop />
-      <nav className="max-w-6xl mx-auto flex items-center justify-between p-6">
+      <nav className="max-w-6xl mx-auto flex items-center justify-between p-4 sm:p-6">
         <div className="flex items-center gap-2 font-semibold tracking-tight">
           <span className="size-2 rounded-full bg-violet-500" /> Veridex
         </div>
@@ -45,7 +45,7 @@ export default function Landing() {
 
       <motion.section
         initial="hidden" animate="show" variants={fadeUp}
-        className="relative max-w-3xl mx-auto text-center px-6 pt-20 pb-24 space-y-6"
+        className="relative max-w-3xl mx-auto text-center px-5 sm:px-6 pt-14 sm:pt-20 pb-16 sm:pb-24 space-y-5 sm:space-y-6"
       >
         {/* Localised scrim: the candlestick footage is busiest right
             behind the headline, so darken just that patch. */}
@@ -58,10 +58,10 @@ export default function Landing() {
           <span className="size-1.5 rounded-full bg-violet-500 animate-pulse" />
           For Indian retail investors
         </div>
-        <h1 className="text-6xl font-semibold tracking-tight leading-none text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.9)]">
-          Stock analysis you<br />can actually verify.
+        <h1 className="text-[2.25rem] leading-[1.08] sm:text-5xl md:text-6xl font-semibold tracking-tight sm:leading-none text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.9)]">
+          Stock analysis you<br className="hidden sm:inline" /> can actually verify.
         </h1>
-        <p className="text-neutral-200 text-lg max-w-xl mx-auto [text-shadow:0_1px_12px_rgba(0,0,0,0.9)]">
+        <p className="text-neutral-200 text-base sm:text-lg max-w-xl mx-auto [text-shadow:0_1px_12px_rgba(0,0,0,0.9)]">
           Live Upstox market data, transparent backtested signal accuracy,
           and AI explanations grounded in real computed numbers.
           Never a bare "buy this" tip.
@@ -76,13 +76,13 @@ export default function Landing() {
         </div>
       </motion.section>
 
-      <section className="max-w-5xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-2 gap-5">
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-16 grid grid-cols-1 md:grid-cols-2 gap-5">
         {features.map((f, i) => (
           <motion.div
             key={f.title}
             initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }}
             variants={fadeUp} transition={{ delay: i * 0.08 }}
-            className="rounded-xl border border-neutral-900 bg-neutral-950 p-6 space-y-2"
+            className="rounded-xl border border-neutral-900 bg-neutral-950 p-5 sm:p-6 space-y-2"
           >
             <div className="text-sm font-medium">{f.title}</div>
             <p className="text-sm text-neutral-500 leading-relaxed">{f.body}</p>
@@ -93,9 +93,9 @@ export default function Landing() {
       <motion.section
         initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }}
         variants={fadeUp}
-        className="max-w-3xl mx-auto px-6 py-10"
+        className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10"
       >
-        <div className="rounded-2xl border border-neutral-900 bg-neutral-950/80 backdrop-blur p-6 space-y-4">
+        <div className="rounded-2xl border border-neutral-900 bg-neutral-950/80 backdrop-blur p-5 sm:p-6 space-y-4">
           <h2 className="text-2xl font-semibold">Ground rules</h2>
           <ul className="space-y-2 text-sm text-neutral-300">
             {groundRules.map((r) => (
@@ -108,7 +108,7 @@ export default function Landing() {
         </div>
       </motion.section>
 
-      <footer className="max-w-3xl mx-auto px-6 pb-10">
+      <footer className="max-w-3xl mx-auto px-4 sm:px-6 pb-10">
         <div className="rounded-xl border border-neutral-900 bg-neutral-950/80 backdrop-blur p-4 text-center">
           <p className="text-xs text-neutral-400">
             Not SEBI-registered investment advice. Educational/analytical tool only.
